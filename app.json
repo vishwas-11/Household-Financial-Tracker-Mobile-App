@@ -1,17 +1,21 @@
-{
+﻿{
   "expo": {
-    "name": "Household-funds-tracker-mobille-app",
-    "slug": "Household-funds-tracker-mobille-app",
+    "name": "Household Funds",
+    "slug": "household-funds-tracker-mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#08090a",
+    "splash": {
+      "backgroundColor": "#08090a"
+    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#08090a",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -20,6 +24,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Household Funds to access receipts and bill photos."
+        }
+      ]
+    ]
   }
 }
