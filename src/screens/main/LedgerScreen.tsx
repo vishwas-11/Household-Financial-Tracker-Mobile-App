@@ -8,9 +8,23 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, Filter, Plus, Receipt, TrendingUp, AlertTriangle } from 'lucide-react-native';
+import {
+  Search,
+  Plus,
+  Receipt,
+  TrendingUp,
+  AlertTriangle,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  Check,
+  X,
+  Clock,
+} from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { Header } from '../../components/Header';
 import { TransactionItem } from '../../components/TransactionItem';
@@ -20,9 +34,31 @@ import { useApp } from '../../context/AppContext';
 import { TransactionType } from '../../types';
 import { formatCurrency } from '../../lib/currency';
 
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const MONTH_SHORT_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
 export const LedgerScreen: React.FC = () => {
   const { transactions, members, deleteTransaction, isRefreshing, refreshData } = useApp();
 
+  const now = useMemo(() => new Date(), []);
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-indexed
+
+  // Month navigation state
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
+  const [isAllTime, setIsAllTime] = useState<boolean>(false);
+  const [isMonthPickerModalOpen, setIsMonthPickerModalOpen] = useState<boolean>(false);
+  const [pickerYear, setPickerYear] = useState<number>(currentYear);
+
+  // Filters & Modal state
   const [activeFilter, setActiveFilter] = useState<'all' | TransactionType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMember, setSelectedMember] = useState<string>('all');
@@ -32,13 +68,88 @@ export const LedgerScreen: React.FC = () => {
   const hasIncome = transactions.some((t) => t.type === 'income');
   const [modalInitialType, setModalInitialType] = useState<'income' | 'expenditure'>('income');
 
+  // Format active month labels
+  const selectedYearMonthStr = useMemo(() => {
+    const m = String(selectedMonth + 1).padStart(2, '0');
+    return `${selectedYear}-${m}`;
+  }, [selectedYear, selectedMonth]);
+
+  const selectedMonthLabel = useMemo(() => {
+    return `${MONTH_NAMES[selectedMonth]} ${selectedYear}`;
+  }, [selectedMonth, selectedYear]);
+
+  // Initial date for AddTransactionModal based on selected month
+  const modalInitialDate = useMemo(() => {
+    if (isAllTime || (selectedYear === currentYear && selectedMonth === currentMonth)) {
+      const todayStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      return todayStr;
+    }
+    return `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+  }, [isAllTime, selectedYear, selectedMonth, currentYear, currentMonth, now]);
+
   const handleOpenAddModal = (preselectedType?: 'income' | 'expenditure') => {
     setModalInitialType(preselectedType || (hasIncome ? 'expenditure' : 'income'));
     setIsAddModalOpen(true);
   };
 
-  // Dynamic available balance
-  const currentBalance = useMemo(() => {
+  // Month navigation handlers
+  const handlePrevMonth = () => {
+    setIsAllTime(false);
+    if (selectedMonth === 0) {
+      setSelectedMonth(11);
+      setSelectedYear((y) => y - 1);
+      setPickerYear((y) => y - 1);
+    } else {
+      setSelectedMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    setIsAllTime(false);
+    if (selectedMonth === 11) {
+      setSelectedMonth(0);
+      setSelectedYear((y) => y + 1);
+      setPickerYear((y) => y + 1);
+    } else {
+      setSelectedMonth((m) => m + 1);
+    }
+  };
+
+  const handleJumpToCurrentMonth = () => {
+    setIsAllTime(false);
+    setSelectedYear(currentYear);
+    setSelectedMonth(currentMonth);
+    setPickerYear(currentYear);
+  };
+
+  // Filter transactions strictly by selected month (or all time)
+  const monthTransactions = useMemo(() => {
+    if (isAllTime) return transactions;
+    return transactions.filter((tx) => {
+      if (tx.fullDate) {
+        return tx.fullDate.startsWith(selectedYearMonthStr);
+      }
+      return true;
+    });
+  }, [transactions, isAllTime, selectedYearMonthStr]);
+
+  // Financial calculations for the selected month
+  const monthIncome = useMemo(() => {
+    return monthTransactions
+      .filter((t) => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [monthTransactions]);
+
+  const monthExpense = useMemo(() => {
+    return monthTransactions
+      .filter((t) => t.type === 'expenditure')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [monthTransactions]);
+
+  const monthNet = monthIncome - monthExpense;
+
+  // Cumulative overall reserve across all transactions
+  const overallReserve = useMemo(() => {
     return transactions.reduce((acc, t) => {
       if (t.type === 'income') return acc + t.amount;
       if (t.type === 'expenditure') return acc - t.amount;
@@ -46,9 +157,9 @@ export const LedgerScreen: React.FC = () => {
     }, 0);
   }, [transactions]);
 
-  // Filtered transactions
+  // Filtered transactions (month + type + member + search)
   const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
+    return monthTransactions.filter((tx) => {
       const matchesType = activeFilter === 'all' || tx.type === activeFilter;
       const matchesMember = selectedMember === 'all' || tx.memberId === selectedMember;
       const matchesSearch =
@@ -58,7 +169,7 @@ export const LedgerScreen: React.FC = () => {
 
       return matchesType && matchesMember && matchesSearch;
     });
-  }, [transactions, activeFilter, selectedMember, searchQuery]);
+  }, [monthTransactions, activeFilter, selectedMember, searchQuery]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -79,33 +190,163 @@ export const LedgerScreen: React.FC = () => {
           />
         }
       >
-        {/* Balance Card Banner */}
-        <View style={[styles.balanceBanner, currentBalance < 0 && styles.balanceBannerDeficit]}>
+        {/* Month Selector Bar */}
+        <View style={styles.monthSelectorBar}>
+          <View style={styles.monthNavControls}>
+            <TouchableOpacity
+              onPress={handlePrevMonth}
+              style={styles.monthNavArrow}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <ChevronLeft size={16} color={Colors.text} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setPickerYear(selectedYear);
+                setIsMonthPickerModalOpen(true);
+              }}
+              style={styles.monthTitlePill}
+              activeOpacity={0.7}
+            >
+              <Calendar size={13} color={Colors.brand} />
+              <Text style={styles.monthTitleText}>
+                {isAllTime ? 'All Time' : selectedMonthLabel}
+              </Text>
+              <ChevronDown size={12} color={Colors.textMuted} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleNextMonth}
+              style={styles.monthNavArrow}
+              activeOpacity={0.7}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <ChevronRight size={16} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Quick Scope Switcher */}
+          <View style={styles.scopeSwitcher}>
+            <TouchableOpacity
+              onPress={handleJumpToCurrentMonth}
+              style={[
+                styles.scopeBtn,
+                !isAllTime &&
+                  selectedYear === currentYear &&
+                  selectedMonth === currentMonth &&
+                  styles.scopeBtnActive,
+              ]}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.scopeBtnText,
+                  !isAllTime &&
+                    selectedYear === currentYear &&
+                    selectedMonth === currentMonth &&
+                    styles.scopeBtnTextActive,
+                ]}
+              >
+                This Month
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setIsAllTime(true)}
+              style={[styles.scopeBtn, isAllTime && styles.scopeBtnActive]}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.scopeBtnText, isAllTime && styles.scopeBtnTextActive]}>
+                All Time
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Dynamic Month Financial Balance Banner */}
+        <View
+          style={[
+            styles.balanceBanner,
+            !isAllTime && monthNet < 0 && styles.balanceBannerDeficit,
+            isAllTime && overallReserve < 0 && styles.balanceBannerDeficit,
+          ]}
+        >
           <View style={{ flex: 1 }}>
             <View style={styles.balanceHeaderRow}>
-              <Text style={styles.balanceLabel}>CURRENT AVAILABLE FUNDS</Text>
-              {currentBalance < 0 && (
+              <Text style={styles.balanceLabel}>
+                {isAllTime
+                  ? 'CUMULATIVE AVAILABLE FUNDS (ALL TIME)'
+                  : `NET CASH FLOW • ${selectedMonthLabel.toUpperCase()}`}
+              </Text>
+              {!isAllTime ? (
+                monthNet < 0 ? (
+                  <View style={styles.deficitPill}>
+                    <AlertTriangle size={10} color={Colors.expense} />
+                    <Text style={styles.deficitPillText}>Monthly Deficit</Text>
+                  </View>
+                ) : monthNet > 0 ? (
+                  <View style={styles.surplusPill}>
+                    <TrendingUp size={10} color={Colors.income} />
+                    <Text style={styles.surplusPillText}>Monthly Surplus</Text>
+                  </View>
+                ) : null
+              ) : overallReserve < 0 ? (
                 <View style={styles.deficitPill}>
                   <AlertTriangle size={10} color={Colors.expense} />
-                  <Text style={styles.deficitPillText}>Deficit</Text>
+                  <Text style={styles.deficitPillText}>Reserve Deficit</Text>
                 </View>
-              )}
+              ) : null}
             </View>
+
             <Text
               style={[
                 styles.balanceValue,
-                currentBalance < 0 && { color: Colors.expense },
-                currentBalance > 0 && { color: Colors.income },
+                !isAllTime
+                  ? monthNet < 0
+                    ? { color: Colors.expense }
+                    : monthNet > 0
+                    ? { color: Colors.income }
+                    : { color: Colors.text }
+                  : overallReserve < 0
+                  ? { color: Colors.expense }
+                  : { color: Colors.text },
               ]}
             >
-              {formatCurrency(currentBalance)}
+              {!isAllTime
+                ? `${monthNet > 0 ? '+' : ''}${formatCurrency(monthNet)}`
+                : formatCurrency(overallReserve)}
             </Text>
-            <Text style={styles.balanceSubtext}>
-              {currentBalance < 0
-                ? 'Balance is negative. Log your income to offset expenses.'
-                : `${filteredTransactions.length} records matching current filter`}
-            </Text>
+
+            {/* Inflow / Outflow summary */}
+            {!isAllTime ? (
+              <View style={styles.inflowOutflowRow}>
+                <Text style={styles.inflowText}>
+                  +{formatCurrency(monthIncome, { showDecimals: false })} Inflow
+                </Text>
+                <Text style={styles.summaryDot}>•</Text>
+                <Text style={styles.outflowText}>
+                  -{formatCurrency(monthExpense, { showDecimals: false })} Outflow
+                </Text>
+                <Text style={styles.summaryDot}>•</Text>
+                <Text style={styles.balanceSubtext}>
+                  {filteredTransactions.length} records
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.balanceSubtext}>
+                {filteredTransactions.length} total records across all months
+              </Text>
+            )}
+
+            {!isAllTime && (
+              <Text style={styles.reserveSubtext}>
+                Overall Household Reserve: {formatCurrency(overallReserve)}
+              </Text>
+            )}
           </View>
+
           <TouchableOpacity
             style={[
               styles.newEntryBtn,
@@ -126,11 +367,16 @@ export const LedgerScreen: React.FC = () => {
           <Search size={14} color={Colors.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search description, category, or date..."
+            placeholder={`Search ${isAllTime ? 'all' : selectedMonthLabel} records...`}
             placeholderTextColor={Colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7}>
+              <X size={14} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Filter Tabs */}
@@ -218,16 +464,23 @@ export const LedgerScreen: React.FC = () => {
                   <Receipt size={24} color={Colors.brand} />
                 )}
               </View>
+
               <Text style={styles.emptyTitle}>
                 {transactions.length === 0
                   ? 'Add Your Opening Income First'
+                  : monthTransactions.length === 0
+                  ? `No Entries in ${selectedMonthLabel}`
                   : 'No Matching Transactions'}
               </Text>
+
               <Text style={styles.emptyText}>
                 {transactions.length === 0
                   ? 'Record your salary, family deposit, or opening funds first. Adding income before expenses ensures your household balance does not start in negative.'
-                  : 'No transactions match your selected search or filter criteria. Try clearing filters.'}
+                  : monthTransactions.length === 0
+                  ? `There are no income or expense entries recorded for ${selectedMonthLabel}. Add an entry for this month or switch to a different period.`
+                  : `No transactions match your search or filters in ${selectedMonthLabel}. Try clearing your filters.`}
               </Text>
+
               {transactions.length === 0 ? (
                 <TouchableOpacity
                   onPress={() => handleOpenAddModal('income')}
@@ -237,6 +490,26 @@ export const LedgerScreen: React.FC = () => {
                   <Plus size={13} color={Colors.white} />
                   <Text style={styles.emptyAddBtnText}>Add Income First</Text>
                 </TouchableOpacity>
+              ) : monthTransactions.length === 0 ? (
+                <View style={styles.emptyActionsRow}>
+                  <TouchableOpacity
+                    onPress={() => handleOpenAddModal()}
+                    style={styles.emptyAddBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Plus size={13} color={Colors.white} />
+                    <Text style={styles.emptyAddBtnText}>
+                      Add Entry for {MONTH_SHORT_NAMES[selectedMonth]}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleJumpToCurrentMonth}
+                    style={styles.emptySecondaryBtn}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.emptySecondaryBtnText}>View This Month</Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <TouchableOpacity
                   onPress={() => {
@@ -264,10 +537,150 @@ export const LedgerScreen: React.FC = () => {
         </View>
       </ScrollView>
 
+      {/* Quick Month & Year Picker Modal */}
+      <Modal
+        visible={isMonthPickerModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsMonthPickerModalOpen(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setIsMonthPickerModalOpen(false)}
+          />
+
+          <View style={styles.monthPickerCard}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <View>
+                <Text style={styles.modalTitle}>Reconciliation Month</Text>
+                <Text style={styles.modalSubtitle}>Filter ledger by accounting period</Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsMonthPickerModalOpen(false)}
+                style={styles.modalCloseBtn}
+                activeOpacity={0.7}
+              >
+                <X size={16} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick shortcuts */}
+            <View style={styles.quickModalShortcuts}>
+              <TouchableOpacity
+                onPress={() => {
+                  handleJumpToCurrentMonth();
+                  setIsMonthPickerModalOpen(false);
+                }}
+                style={[
+                  styles.quickModalPill,
+                  !isAllTime &&
+                    selectedYear === currentYear &&
+                    selectedMonth === currentMonth &&
+                    styles.quickModalPillActive,
+                ]}
+                activeOpacity={0.7}
+              >
+                <Clock size={12} color={Colors.textSecondary} />
+                <Text style={styles.quickModalPillText}>
+                  Current Month ({MONTH_SHORT_NAMES[currentMonth]} {currentYear})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  setIsAllTime(true);
+                  setIsMonthPickerModalOpen(false);
+                }}
+                style={[
+                  styles.quickModalPill,
+                  isAllTime && styles.quickModalPillActive,
+                ]}
+                activeOpacity={0.7}
+              >
+                <Calendar size={12} color={Colors.textSecondary} />
+                <Text style={styles.quickModalPillText}>All Time (All Records)</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Year Stepper */}
+            <View style={styles.yearStepperRow}>
+              <TouchableOpacity
+                onPress={() => setPickerYear((y) => y - 1)}
+                style={styles.yearStepperBtn}
+                activeOpacity={0.7}
+              >
+                <ChevronLeft size={16} color={Colors.text} />
+              </TouchableOpacity>
+              <Text style={styles.yearStepperText}>{pickerYear}</Text>
+              <TouchableOpacity
+                onPress={() => setPickerYear((y) => y + 1)}
+                style={styles.yearStepperBtn}
+                activeOpacity={0.7}
+              >
+                <ChevronRight size={16} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            {/* 12-Month Grid */}
+            <View style={styles.monthsGrid}>
+              {MONTH_NAMES.map((mName, idx) => {
+                const isSelected =
+                  !isAllTime && selectedYear === pickerYear && selectedMonth === idx;
+                const isCurrentMonthNow = currentYear === pickerYear && currentMonth === idx;
+                const monthCode = `${pickerYear}-${String(idx + 1).padStart(2, '0')}`;
+                const hasDataInMonth = transactions.some(
+                  (t) => t.fullDate && t.fullDate.startsWith(monthCode)
+                );
+
+                return (
+                  <TouchableOpacity
+                    key={mName}
+                    onPress={() => {
+                      setSelectedYear(pickerYear);
+                      setSelectedMonth(idx);
+                      setIsAllTime(false);
+                      setIsMonthPickerModalOpen(false);
+                    }}
+                    style={[
+                      styles.monthGridCell,
+                      isSelected && styles.monthGridCellSelected,
+                      isCurrentMonthNow && !isSelected && styles.monthGridCellCurrent,
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.monthGridText,
+                        isSelected && styles.monthGridTextSelected,
+                        isCurrentMonthNow && !isSelected && { color: Colors.brand, fontWeight: '700' },
+                      ]}
+                    >
+                      {MONTH_SHORT_NAMES[idx]}
+                    </Text>
+                    {hasDataInMonth && (
+                      <View
+                        style={[
+                          styles.dataDot,
+                          isSelected && { backgroundColor: Colors.white },
+                        ]}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Modals */}
       <AddTransactionModal
         visible={isAddModalOpen}
         initialType={modalInitialType}
+        initialDate={modalInitialDate}
         onClose={() => setIsAddModalOpen(false)}
       />
 
@@ -291,7 +704,70 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingBottom: 40,
-    gap: 16,
+    gap: 14,
+  },
+  monthSelectorBar: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  monthNavControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  monthNavArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: Colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthTitlePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  monthTitleText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  scopeSwitcher: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 6,
+    padding: 2,
+    gap: 2,
+  },
+  scopeBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 5,
+  },
+  scopeBtnActive: {
+    backgroundColor: Colors.surfaceHighlight,
+  },
+  scopeBtnText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: Colors.textMuted,
+  },
+  scopeBtnTextActive: {
+    color: Colors.text,
+    fontWeight: '700',
   },
   balanceBanner: {
     backgroundColor: Colors.surface,
@@ -333,16 +809,54 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.expense,
   },
+  surplusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.incomeSubdued,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  surplusPillText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.income,
+  },
   balanceValue: {
     fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
     letterSpacing: -0.5,
   },
+  inflowOutflowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  inflowText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.income,
+  },
+  outflowText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.expense,
+  },
+  summaryDot: {
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
   balanceSubtext: {
     fontSize: 11,
     color: Colors.textMuted,
-    marginTop: 2,
+  },
+  reserveSubtext: {
+    fontSize: 10,
+    color: Colors.textSubdued,
+    marginTop: 3,
   },
   newEntryBtn: {
     flexDirection: 'row',
@@ -458,15 +972,20 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
-    maxWidth: 280,
+    maxWidth: 290,
     marginBottom: 16,
+  },
+  emptyActionsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
   },
   emptyAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     backgroundColor: Colors.brand,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 9,
     borderRadius: 8,
   },
@@ -474,6 +993,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: Colors.white,
+  },
+  emptySecondaryBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  emptySecondaryBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
   },
   emptyResetBtn: {
     paddingHorizontal: 14,
@@ -485,5 +1017,142 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: Colors.textSecondary,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  monthPickerCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 18,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  modalSubtitle: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  modalCloseBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.surfaceElevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickModalShortcuts: {
+    flexDirection: 'column',
+    gap: 6,
+    marginBottom: 14,
+  },
+  quickModalPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  quickModalPillActive: {
+    borderColor: Colors.brand,
+    backgroundColor: Colors.brandSubdued,
+  },
+  quickModalPillText: {
+    fontSize: 12,
+    color: Colors.text,
+    fontWeight: '600',
+  },
+  yearStepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  yearStepperBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  yearStepperText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: Colors.text,
+  },
+  monthsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  monthGridCell: {
+    width: '30%',
+    height: 40,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  monthGridCellSelected: {
+    backgroundColor: Colors.brand,
+    borderColor: Colors.brand,
+  },
+  monthGridCellCurrent: {
+    borderColor: Colors.brand,
+  },
+  monthGridText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  monthGridTextSelected: {
+    color: Colors.white,
+    fontWeight: '700',
+  },
+  dataDot: {
+    position: 'absolute',
+    bottom: 4,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.brand,
   },
 });

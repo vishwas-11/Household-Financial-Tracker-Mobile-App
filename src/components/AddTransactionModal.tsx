@@ -29,12 +29,14 @@ interface AddTransactionModalProps {
   visible: boolean;
   onClose: () => void;
   initialType?: TransactionType;
+  initialDate?: string;
 }
 
 export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   visible,
   onClose,
   initialType,
+  initialDate,
 }) => {
   const { members, user, addTransaction, transactions } = useApp();
   const insets = useSafeAreaInsets();
@@ -58,7 +60,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [receiptUri, setReceiptUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // When modal opens, sync type and category if initialType was specified or if 0 income
+  // When modal opens, sync type, category, and date if specified
   useEffect(() => {
     if (visible) {
       const targetType = initialType || (totalIncomeCount === 0 ? 'income' : 'expenditure');
@@ -68,8 +70,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       } else {
         setCategory(TRANSACTION_CATEGORIES[0]);
       }
+      if (initialDate) {
+        setDate(initialDate);
+      }
     }
-  }, [visible, initialType, totalIncomeCount]);
+  }, [visible, initialType, initialDate, totalIncomeCount]);
 
   useEffect(() => {
     if (members.length > 0 && !members.some((m) => m.id === memberId)) {
