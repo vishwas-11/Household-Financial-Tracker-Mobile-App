@@ -14,6 +14,7 @@ import {
   ChevronUp,
   Check,
   RotateCcw,
+  CalendarDays,
 } from 'lucide-react-native';
 import { Colors } from '../constants/colors';
 
@@ -27,6 +28,11 @@ interface MiniDatePickerProps {
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const MONTH_SHORT_NAMES = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
 const WEEKDAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -61,18 +67,22 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
   accentColor = Colors.brand,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'days' | 'months' | 'years'>('days');
 
   const selectedDate = useMemo(() => parseDateString(value), [value]);
 
   // Calendar view navigation state
   const [viewYear, setViewYear] = useState(selectedDate.year);
   const [viewMonth, setViewMonth] = useState(selectedDate.month);
+  const [decadeStart, setDecadeStart] = useState(() => Math.floor(selectedDate.year / 12) * 12);
 
-  // Keep view sync'd if selectedDate changes externally
+  // Keep view sync'd if opened
   const handleToggle = () => {
     if (!isOpen) {
       setViewYear(selectedDate.year);
       setViewMonth(selectedDate.month);
+      setDecadeStart(Math.floor(selectedDate.year / 12) * 12);
+      setViewMode('days');
     }
     setIsOpen(!isOpen);
   };
@@ -98,14 +108,10 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
     const { year, month, day } = selectedDate;
     const d = new Date(year, month, day);
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const monthShort = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-    ];
     const isToday = value === today.str;
     const isYesterday = value === yesterdayStr;
 
-    const base = `${dayNames[d.getDay()]}, ${day} ${monthShort[month]} ${year}`;
+    const base = `${dayNames[d.getDay()]}, ${day} ${MONTH_SHORT_NAMES[month]} ${year}`;
     if (isToday) return `${base} • Today`;
     if (isYesterday) return `${base} • Yesterday`;
     return base;
@@ -128,6 +134,15 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
     } else {
       setViewMonth(viewMonth + 1);
     }
+  };
+
+  // Decade navigation (12 years)
+  const handlePrevDecade = () => {
+    setDecadeStart(decadeStart - 12);
+  };
+
+  const handleNextDecade = () => {
+    setDecadeStart(decadeStart + 12);
   };
 
   // Calendar grid matrix
@@ -169,7 +184,7 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
       });
     }
 
-    // Leading days from next month to complete the 7-col grid (up to 35 or 42)
+    // Leading days from next month to complete the 7-col grid
     const totalCells = days.length > 35 ? 42 : 35;
     const remaining = totalCells - days.length;
     for (let d = 1; d <= remaining; d++) {
@@ -187,14 +202,38 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
     return days;
   }, [viewYear, viewMonth]);
 
+  // 12-year window for year grid
+  const yearList = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => decadeStart + i);
+  }, [decadeStart]);
+
   const handleSelectDay = (dateStr: string) => {
     onChange(dateStr);
+  };
+
+  const handleSelectMonth = (monthIndex: number) => {
+    setViewMonth(monthIndex);
+    // Update value with new month, clamping day if needed
+    const maxDays = new Date(viewYear, monthIndex + 1, 0).getDate();
+    const newDay = Math.min(selectedDate.day, maxDays);
+    onChange(formatDateString(viewYear, monthIndex, newDay));
+    setViewMode('days');
+  };
+
+  const handleSelectYear = (yearNum: number) => {
+    setViewYear(yearNum);
+    // Update value with new year, clamping day if needed (e.g. Feb 29 in leap year)
+    const maxDays = new Date(yearNum, viewMonth + 1, 0).getDate();
+    const newDay = Math.min(selectedDate.day, maxDays);
+    onChange(formatDateString(yearNum, viewMonth, newDay));
+    setViewMode('days');
   };
 
   const handleQuickToday = () => {
     onChange(today.str);
     setViewYear(today.year);
     setViewMonth(today.month);
+    setViewMode('days');
   };
 
   const handleQuickYesterday = () => {
@@ -202,13 +241,13 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
     const { year, month } = parseDateString(yesterdayStr);
     setViewYear(year);
     setViewMonth(month);
+    setViewMode('days');
   };
 
   const handleQuickFirstOfMonth = () => {
-    const firstStr = formatDateString(today.year, today.month, 1);
+    const firstStr = formatDateString(viewYear, viewMonth, 1);
     onChange(firstStr);
-    setViewYear(today.year);
-    setViewMonth(today.month);
+    setViewMode('days');
   };
 
   return (
@@ -257,7 +296,10 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
               onPress={handleQuickToday}
               style={[
                 styles.shortcutPill,
-                value === today.str && [styles.shortcutPillActive, { backgroundColor: `${accentColor}25`, borderColor: accentColor }],
+                value === today.str && [
+                  styles.shortcutPillActive,
+                  { backgroundColor: `${accentColor}25`, borderColor: accentColor },
+                ],
               ]}
               activeOpacity={0.7}
             >
@@ -275,7 +317,10 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
               onPress={handleQuickYesterday}
               style={[
                 styles.shortcutPill,
-                value === yesterdayStr && [styles.shortcutPillActive, { backgroundColor: `${accentColor}25`, borderColor: accentColor }],
+                value === yesterdayStr && [
+                  styles.shortcutPillActive,
+                  { backgroundColor: `${accentColor}25`, borderColor: accentColor },
+                ],
               ]}
               activeOpacity={0.7}
             >
@@ -298,74 +343,207 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* Month & Year Navigation Header */}
-          <View style={styles.monthHeader}>
-            <TouchableOpacity
-              onPress={handlePrevMonth}
-              style={styles.navArrowBtn}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <ChevronLeft size={16} color={Colors.text} />
-            </TouchableOpacity>
+          {/* Navigation Header */}
+          {viewMode === 'days' && (
+            <View style={styles.monthHeader}>
+              <TouchableOpacity
+                onPress={handlePrevMonth}
+                style={styles.navArrowBtn}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <ChevronLeft size={16} color={Colors.text} />
+              </TouchableOpacity>
 
-            <Text style={styles.monthYearTitle}>
-              {MONTH_NAMES[viewMonth]} {viewYear}
-            </Text>
-
-            <TouchableOpacity
-              onPress={handleNextMonth}
-              style={styles.navArrowBtn}
-              activeOpacity={0.7}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <ChevronRight size={16} color={Colors.text} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Weekday Labels Header */}
-          <View style={styles.weekdaysRow}>
-            {WEEKDAY_NAMES.map((w, idx) => (
-              <View key={`${w}-${idx}`} style={styles.weekdayCell}>
-                <Text style={styles.weekdayText}>{w}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Days Grid */}
-          <View style={styles.daysGrid}>
-            {calendarDays.map((item, index) => {
-              const isSelected = item.dateStr === value;
-              const isItemToday = item.dateStr === today.str;
-
-              return (
+              {/* Interactive Month & Year Selectors */}
+              <View style={styles.headerPillsRow}>
                 <TouchableOpacity
-                  key={`${item.dateStr}-${index}`}
-                  onPress={() => handleSelectDay(item.dateStr)}
-                  style={[
-                    styles.dayCell,
-                    isSelected && [styles.dayCellSelected, { backgroundColor: accentColor }],
-                    isItemToday && !isSelected && styles.dayCellToday,
-                  ]}
+                  onPress={() => setViewMode('months')}
+                  style={styles.selectorPill}
                   activeOpacity={0.7}
                 >
-                  <Text
-                    style={[
-                      styles.dayText,
-                      !item.isCurrentMonth && styles.dayTextMuted,
-                      isItemToday && !isSelected && styles.dayTextToday,
-                      isSelected && styles.dayTextSelected,
-                    ]}
-                  >
-                    {item.day}
-                  </Text>
-                  {isItemToday && !isSelected && (
-                    <View style={[styles.todayIndicatorDot, { backgroundColor: accentColor }]} />
-                  )}
+                  <Text style={styles.selectorPillText}>{MONTH_NAMES[viewMonth]}</Text>
+                  <ChevronDown size={12} color={Colors.textMuted} />
                 </TouchableOpacity>
-              );
-            })}
-          </View>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    setDecadeStart(Math.floor(viewYear / 12) * 12);
+                    setViewMode('years');
+                  }}
+                  style={[styles.selectorPill, styles.yearSelectorPill]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.selectorPillText, { fontWeight: '700' }]}>{viewYear}</Text>
+                  <ChevronDown size={12} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleNextMonth}
+                style={styles.navArrowBtn}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <ChevronRight size={16} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Header in Year Selection Mode */}
+          {viewMode === 'years' && (
+            <View style={styles.monthHeader}>
+              <TouchableOpacity
+                onPress={handlePrevDecade}
+                style={styles.navArrowBtn}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <ChevronLeft size={16} color={Colors.text} />
+              </TouchableOpacity>
+
+              <Text style={styles.modeTitle}>
+                Select Year: {decadeStart} – {decadeStart + 11}
+              </Text>
+
+              <TouchableOpacity
+                onPress={handleNextDecade}
+                style={styles.navArrowBtn}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <ChevronRight size={16} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Header in Month Selection Mode */}
+          {viewMode === 'months' && (
+            <View style={styles.monthHeader}>
+              <View style={{ width: 28 }} />
+              <Text style={styles.modeTitle}>Select Month ({viewYear})</Text>
+              <TouchableOpacity
+                onPress={() => setViewMode('days')}
+                style={styles.backPill}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.backPillText}>Back</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* VIEW: DAYS (Calendar Grid) */}
+          {viewMode === 'days' && (
+            <>
+              {/* Weekday Labels Header */}
+              <View style={styles.weekdaysRow}>
+                {WEEKDAY_NAMES.map((w, idx) => (
+                  <View key={`${w}-${idx}`} style={styles.weekdayCell}>
+                    <Text style={styles.weekdayText}>{w}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Days Grid */}
+              <View style={styles.daysGrid}>
+                {calendarDays.map((item, index) => {
+                  const isSelected = item.dateStr === value;
+                  const isItemToday = item.dateStr === today.str;
+
+                  return (
+                    <TouchableOpacity
+                      key={`${item.dateStr}-${index}`}
+                      onPress={() => handleSelectDay(item.dateStr)}
+                      style={[
+                        styles.dayCell,
+                        isSelected && [styles.dayCellSelected, { backgroundColor: accentColor }],
+                        isItemToday && !isSelected && styles.dayCellToday,
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.dayText,
+                          !item.isCurrentMonth && styles.dayTextMuted,
+                          isItemToday && !isSelected && styles.dayTextToday,
+                          isSelected && styles.dayTextSelected,
+                        ]}
+                      >
+                        {item.day}
+                      </Text>
+                      {isItemToday && !isSelected && (
+                        <View style={[styles.todayIndicatorDot, { backgroundColor: accentColor }]} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </>
+          )}
+
+          {/* VIEW: YEARS (12-Year Grid) */}
+          {viewMode === 'years' && (
+            <View style={styles.grid12Container}>
+              {yearList.map((y) => {
+                const isSelectedYear = selectedDate.year === y;
+                const isCurrentYear = today.year === y;
+                return (
+                  <TouchableOpacity
+                    key={y}
+                    onPress={() => handleSelectYear(y)}
+                    style={[
+                      styles.grid12Cell,
+                      isSelectedYear && [styles.grid12CellSelected, { backgroundColor: accentColor }],
+                      isCurrentYear && !isSelectedYear && styles.grid12CellToday,
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.grid12Text,
+                        isSelectedYear && styles.grid12TextSelected,
+                        isCurrentYear && !isSelectedYear && { color: accentColor, fontWeight: '700' },
+                      ]}
+                    >
+                      {y}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* VIEW: MONTHS (12-Month Grid) */}
+          {viewMode === 'months' && (
+            <View style={styles.grid12Container}>
+              {MONTH_SHORT_NAMES.map((mName, idx) => {
+                const isSelectedMonth = selectedDate.month === idx && selectedDate.year === viewYear;
+                const isCurrentMonth = today.month === idx && today.year === viewYear;
+                return (
+                  <TouchableOpacity
+                    key={mName}
+                    onPress={() => handleSelectMonth(idx)}
+                    style={[
+                      styles.grid12Cell,
+                      isSelectedMonth && [styles.grid12CellSelected, { backgroundColor: accentColor }],
+                      isCurrentMonth && !isSelectedMonth && styles.grid12CellToday,
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.grid12Text,
+                        isSelectedMonth && styles.grid12TextSelected,
+                        isCurrentMonth && !isSelectedMonth && { color: accentColor, fontWeight: '700' },
+                      ]}
+                    >
+                      {mName}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
 
           {/* Footer Actions */}
           <View style={styles.calendarFooter}>
@@ -495,8 +673,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 6,
-    paddingHorizontal: 4,
+    paddingHorizontal: 2,
     marginBottom: 8,
+  },
+  headerPillsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectorPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  yearSelectorPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  selectorPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  modeTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  backPill: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  backPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textSecondary,
   },
   navArrowBtn: {
     width: 28,
@@ -507,11 +727,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  monthYearTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.text,
   },
   weekdaysRow: {
     flexDirection: 'row',
@@ -579,6 +794,42 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
+  },
+  grid12Container: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    gap: 8,
+  },
+  grid12Cell: {
+    width: '30%',
+    height: 42,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  grid12CellSelected: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  grid12CellToday: {
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  grid12Text: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  grid12TextSelected: {
+    color: Colors.white,
+    fontWeight: '700',
   },
   calendarFooter: {
     flexDirection: 'row',
