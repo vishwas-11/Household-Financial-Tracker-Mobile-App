@@ -23,6 +23,7 @@ import { Colors } from '../constants/colors';
 import { TRANSACTION_CATEGORIES } from '../constants/initialData';
 import { useApp } from '../context/AppContext';
 import { uploadReceiptImage } from '../lib/storage';
+import { MiniDatePicker } from './MiniDatePicker';
 
 interface AddTransactionModalProps {
   visible: boolean;
@@ -441,17 +442,19 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 </View>
               </View>
 
-              {/* Date Input */}
-              <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Date (YYYY-MM-DD)</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={Colors.textMuted}
-                  value={date}
-                  onChangeText={setDate}
-                />
-              </View>
+              {/* Interactive Mini Calendar Date Picker */}
+              <MiniDatePicker
+                value={date}
+                onChange={setDate}
+                label="TRANSACTION DATE"
+                accentColor={
+                  type === 'income'
+                    ? Colors.income
+                    : type === 'savings'
+                    ? Colors.brand
+                    : Colors.expense
+                }
+              />
 
               {/* Notes Input */}
               <View style={styles.fieldGroup}>
