@@ -1,4 +1,4 @@
-﻿{
+{
   "expo": {
     "name": "Household Funds",
     "slug": "household-funds-tracker-mobile-app",
@@ -13,7 +13,15 @@
     "ios": {
       "supportsTablet": true
     },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "android": {
+      "package": "com.household.funds",
       "adaptiveIcon": {
         "backgroundColor": "#08090a",
         "foregroundImage": "./assets/android-icon-foreground.png",
