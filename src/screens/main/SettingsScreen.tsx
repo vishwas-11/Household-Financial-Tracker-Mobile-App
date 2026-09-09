@@ -1,4 +1,4 @@
-// src/screens/main/SettingsScreen.tsx
+﻿// src/screens/main/SettingsScreen.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -571,3 +571,4 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 });
+

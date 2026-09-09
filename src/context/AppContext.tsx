@@ -1,4 +1,4 @@
-// src/context/AppContext.tsx
+﻿// src/context/AppContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -44,6 +44,7 @@ interface AppContextType {
   // Data modification methods
   addTransaction: (tx: Transaction) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
+  updateTransaction: (id: string, updates: Partial<Transaction>) => Promise<{ success: boolean; error?: string }>;
   addRecurring: (item: RecurringItem) => Promise<void>;
   deleteRecurring: (id: string) => Promise<void>;
   addMember: (member: Member) => Promise<void>;
@@ -374,6 +375,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Update Transaction (e.g. category edit)
+  const updateTransaction = async (id: string, updates: Partial<Transaction>): Promise<{ success: boolean; error?: string }> => {
+    // Optimistically update local state
+    setTransactions((prev) => {
+      const updated = prev.map((t) => (t.id === id ? { ...t, ...updates } : t));
+      setMonthlyCashFlow(computeDynamicCashFlow(updated));
+      return updated;
+    });
+
+    if (user?.householdId) {
+      try {
+        // Map camelCase fields to snake_case DB columns
+        const dbUpdates: Record<string, unknown> = {};
+        if (updates.category !== undefined) dbUpdates.category = updates.category;
+        if (updates.description !== undefined) dbUpdates.description = updates.description;
+        if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+        if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
+        if (updates.type !== undefined) dbUpdates.type = updates.type;
+
+        const { error } = await supabase
+          .from('transactions')
+          .update(dbUpdates)
+          .eq('id', id);
+
+        if (error) {
+          console.warn('Supabase update transaction error:', error);
+          return { success: false, error: error.message };
+        }
+      } catch (err: any) {
+        console.warn('Supabase update transaction error:', err);
+        return { success: false, error: err?.message || 'Unknown error' };
+      }
+    }
+    return { success: true };
+  };
+
   // Add Recurring Item
   const addRecurring = async (item: RecurringItem) => {
     setRecurringItems((prev) => [...prev, item]);
@@ -506,6 +543,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         joinHousehold,
         addTransaction,
         deleteTransaction,
+        updateTransaction,
         addRecurring,
         deleteRecurring,
         addMember,
@@ -530,3 +568,4 @@ export const useApp = () => {
   }
   return context;
 };
+

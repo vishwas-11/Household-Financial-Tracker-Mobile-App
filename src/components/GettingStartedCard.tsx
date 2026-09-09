@@ -1,4 +1,4 @@
-// src/components/GettingStartedCard.tsx
+﻿// src/components/GettingStartedCard.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -171,7 +171,7 @@ export const GettingStartedCard: React.FC<GettingStartedCardProps> = ({
               </Text>
               <Text style={styles.stepDesc}>
                 {isStep2Done
-                  ? `Opening income active. Balance: ₹${(transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)).toLocaleString('en-IN')}`
+                  ? `Opening income active. Balance: â‚¹${(transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)).toLocaleString('en-IN')}`
                   : 'Important: Record your salary, deposit, or cash balance first so your balance does not start in negative.'}
               </Text>
             </View>
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
   iconBadge: {
     width: 36,
     height: 36,
-    borderRadius: 8,
+    borderRadius: 16,
     backgroundColor: Colors.brandSubdued,
     borderWidth: 1,
     borderColor: Colors.brandBorder,
@@ -418,10 +418,10 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stepItem: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceCard,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 10,
   },
   stepItemDone: {
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(94, 106, 210, 0.06)',
     borderWidth: 1,
     borderColor: 'rgba(94, 106, 210, 0.18)',
-    borderRadius: 8,
+    borderRadius: 16,
     padding: 10,
     marginTop: 12,
   },
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceCard,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 14,
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceHighlight,
     borderWidth: 1,
     borderColor: Colors.borderLight,
-    borderRadius: 8,
+    borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
@@ -557,3 +557,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+

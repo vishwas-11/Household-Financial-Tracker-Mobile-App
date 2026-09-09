@@ -1,4 +1,4 @@
-// src/screens/main/RecurringScreen.tsx
+﻿// src/screens/main/RecurringScreen.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -150,11 +150,11 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   bannerCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceCard,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 18,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -168,8 +168,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   bannerValue: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: Colors.text,
     letterSpacing: -0.5,
     marginVertical: 4,
@@ -182,27 +182,27 @@ const styles = StyleSheet.create({
   newScheduleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     backgroundColor: Colors.brand,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
   },
   newScheduleBtnText: {
     color: Colors.white,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 12.5,
+    fontWeight: '700',
   },
   statStrip: {
     gap: 8,
     marginBottom: 16,
   },
   stripCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceCard,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 14,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -230,17 +230,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: Colors.text,
+    letterSpacing: -0.2,
     marginBottom: 10,
   },
   emptyRecurringCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceCard,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 8,
-    paddingVertical: 36,
+    borderRadius: 18,
+    paddingVertical: 44,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -283,3 +284,4 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
 });
+

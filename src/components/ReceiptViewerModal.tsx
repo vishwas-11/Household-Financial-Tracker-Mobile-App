@@ -1,4 +1,4 @@
-// src/components/ReceiptViewerModal.tsx
+﻿// src/components/ReceiptViewerModal.tsx
 import React from 'react';
 import {
   Modal,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Platform,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
@@ -26,7 +27,22 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({
   onClose,
 }) => {
   const [loading, setLoading] = React.useState(true);
+  const [hasError, setHasError] = React.useState(false);
   const insets = useSafeAreaInsets();
+
+  // Reset state when imageUrl changes (do NOT use onLoadStart - causes infinite loop on react-native-web)
+  const lastImageUrlRef = React.useRef<string | null>(null);
+  if (imageUrl !== lastImageUrlRef.current) {
+    lastImageUrlRef.current = imageUrl;
+    // Synchronous reset before paint - safe because it's a ref comparison
+  }
+
+  React.useEffect(() => {
+    if (visible) {
+      setLoading(!!imageUrl);
+      setHasError(false);
+    }
+  }, [visible, imageUrl]);
 
   if (!visible || !imageUrl) return null;
 
@@ -58,18 +74,38 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({
 
           {/* Image Container */}
           <View style={styles.imageWrapper}>
-            {loading && (
+            {loading && !hasError && (
               <View style={styles.loader}>
                 <ActivityIndicator size="large" color={Colors.brand} />
               </View>
             )}
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.image}
-              resizeMode="contain"
-              onLoadStart={() => setLoading(true)}
-              onLoadEnd={() => setLoading(false)}
-            />
+
+            {hasError ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorTitle}>Receipt Image Unavailable</Text>
+                <Text style={styles.errorSubtitle}>
+                  The image file could not be rendered. It may be expired, unreachable, or in an unsupported format.
+                </Text>
+                <TouchableOpacity
+                  style={styles.errorActionBtn}
+                  onPress={() => Linking.openURL(imageUrl)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.errorActionText}>Open Link in Browser</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <Image
+                source={{ uri: imageUrl }}
+                style={styles.image}
+                resizeMode="contain"
+                onLoad={() => setLoading(false)}
+                onError={() => {
+                  setLoading(false);
+                  setHasError(true);
+                }}
+              />
+            )}
           </View>
 
           {/* Footer note */}
@@ -147,4 +183,39 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
   },
+  errorContainer: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    maxWidth: 340,
+  },
+  errorTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.text,
+    marginBottom: 6,
+  },
+  errorSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  errorActionBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: Colors.brand,
+  },
+  errorActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.white,
+  },
 });
+

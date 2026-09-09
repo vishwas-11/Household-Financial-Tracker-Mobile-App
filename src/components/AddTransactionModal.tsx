@@ -1,4 +1,4 @@
-// src/components/AddTransactionModal.tsx
+﻿// src/components/AddTransactionModal.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
@@ -134,6 +134,12 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       const uploadRes = await uploadReceiptImage(receiptUri, user?.householdId || 'default-household');
       if (uploadRes.url) {
         finalReceiptUrl = uploadRes.url;
+      } else {
+        console.warn('[AddTransactionModal] Receipt upload failed:', uploadRes.error);
+        Alert.alert(
+          'Receipt Upload Notice',
+          `The transaction will be saved, but the receipt image could not be uploaded to cloud storage (${uploadRes.error || 'Check network connection'}).`
+        );
       }
     }
 
@@ -287,7 +293,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         style={styles.switchIncomeBtn}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.switchIncomeText}>Switch to Income First →</Text>
+                        <Text style={styles.switchIncomeText}>Switch to Income First â†’</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -339,9 +345,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
               {/* Amount Input */}
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Amount (₹) *</Text>
+                <Text style={styles.fieldLabel}>Amount (â‚¹) *</Text>
                 <View style={styles.amountInputContainer}>
-                  <Text style={styles.currencySymbol}>₹</Text>
+                  <Text style={styles.currencySymbol}>â‚¹</Text>
                   <TextInput
                     style={styles.amountInput}
                     placeholder="0.00"
@@ -864,3 +870,4 @@ const styles = StyleSheet.create({
     color: Colors.white,
   },
 });
+

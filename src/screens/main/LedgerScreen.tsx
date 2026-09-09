@@ -1,4 +1,4 @@
-// src/screens/main/LedgerScreen.tsx
+﻿// src/screens/main/LedgerScreen.tsx
 import React, { useState, useMemo } from 'react';
 import {
   View,
@@ -30,8 +30,9 @@ import { Header } from '../../components/Header';
 import { TransactionItem } from '../../components/TransactionItem';
 import { AddTransactionModal } from '../../components/AddTransactionModal';
 import { ReceiptViewerModal } from '../../components/ReceiptViewerModal';
+import { TransactionDetailSheet } from '../../components/TransactionDetailSheet';
 import { useApp } from '../../context/AppContext';
-import { TransactionType } from '../../types';
+import { Transaction, TransactionType } from '../../types';
 import { formatCurrency } from '../../lib/currency';
 
 const MONTH_NAMES = [
@@ -44,7 +45,7 @@ const MONTH_SHORT_NAMES = [
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
 ];
 
-export const LedgerScreen: React.FC = () => {
+export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ route, navigation }) => {
   const { transactions, members, deleteTransaction, isRefreshing, refreshData } = useApp();
 
   const now = useMemo(() => new Date(), []);
@@ -64,6 +65,17 @@ export const LedgerScreen: React.FC = () => {
   const [selectedMember, setSelectedMember] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [receiptUrlToView, setReceiptUrlToView] = useState<string | null>(null);
+  const [selectedTransactionForDetail, setSelectedTransactionForDetail] = useState<Transaction | null>(null);
+
+  // Auto-open transaction detail if navigating from Dashboard
+  React.useEffect(() => {
+    if (route?.params?.selectedTransactionId) {
+      const found = transactions.find((t) => t.id === route.params.selectedTransactionId);
+      if (found) {
+        setSelectedTransactionForDetail(found);
+      }
+    }
+  }, [route?.params?.selectedTransactionId, transactions]);
 
   const hasIncome = transactions.some((t) => t.type === 'income');
   const [modalInitialType, setModalInitialType] = useState<'income' | 'expenditure'>('income');
@@ -278,7 +290,7 @@ export const LedgerScreen: React.FC = () => {
             <Text style={styles.balanceLabel} numberOfLines={1}>
               {isAllTime
                 ? 'CUMULATIVE AVAILABLE FUNDS (ALL TIME)'
-                : `NET CASH FLOW • ${selectedMonthLabel.toUpperCase()}`}
+                : `NET CASH FLOW â€¢ ${selectedMonthLabel.toUpperCase()}`}
             </Text>
             {!isAllTime ? (
               monthNet < 0 ? (
@@ -326,11 +338,11 @@ export const LedgerScreen: React.FC = () => {
               <Text style={styles.inflowText}>
                 +{formatCurrency(monthIncome, { showDecimals: false })} Inflow
               </Text>
-              <Text style={styles.summaryDot}>•</Text>
+              <Text style={styles.summaryDot}>â€¢</Text>
               <Text style={styles.outflowText}>
                 -{formatCurrency(monthExpense, { showDecimals: false })} Outflow
               </Text>
-              <Text style={styles.summaryDot}>•</Text>
+              <Text style={styles.summaryDot}>â€¢</Text>
               <Text style={styles.balanceSubtext}>
                 {filteredTransactions.length} records
               </Text>
@@ -530,6 +542,7 @@ export const LedgerScreen: React.FC = () => {
               <TransactionItem
                 key={tx.id}
                 transaction={tx}
+                onPress={() => setSelectedTransactionForDetail(tx)}
                 onDelete={deleteTransaction}
                 onViewReceipt={(url) => setReceiptUrlToView(url)}
               />
@@ -689,6 +702,22 @@ export const LedgerScreen: React.FC = () => {
         visible={!!receiptUrlToView}
         imageUrl={receiptUrlToView}
         onClose={() => setReceiptUrlToView(null)}
+      />
+
+      <TransactionDetailSheet
+        visible={!!selectedTransactionForDetail}
+        transaction={selectedTransactionForDetail}
+        onClose={() => setSelectedTransactionForDetail(null)}
+        onDelete={(id) => {
+          deleteTransaction(id);
+          setSelectedTransactionForDetail(null);
+        }}
+        onViewReceipt={(url) => {
+          setReceiptUrlToView(url);
+        }}
+        onTransactionUpdated={(updated) => {
+          setSelectedTransactionForDetail(updated);
+        }}
       />
     </SafeAreaView>
   );
@@ -1162,3 +1191,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brand,
   },
 });
+
+
