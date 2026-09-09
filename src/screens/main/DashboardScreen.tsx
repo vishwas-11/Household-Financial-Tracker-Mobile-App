@@ -1,13 +1,12 @@
 ﻿// src/screens/main/DashboardScreen.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Animated, Dimensions, NativeSyntheticEvent, NativeScrollEvent, LayoutChangeEvent,
+  RefreshControl, Dimensions, NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  Plus, FileDown, TrendingUp, TrendingDown, PiggyBank,
-  ChevronRight, ArrowRight, Receipt, Repeat,
+  FileText, Download, ChevronRight, ArrowRight,
 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { Header } from '../../components/Header';
@@ -21,17 +20,15 @@ import { ExportReportModal } from '../../components/ExportReportModal';
 import { GettingStartedCard } from '../../components/GettingStartedCard';
 import { DashboardSkeleton } from '../../components/SkeletonLoader';
 import { useApp } from '../../context/AppContext';
-import { formatCurrency } from '../../lib/currency';
 
 export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { transactions, monthlyCashFlow, householdName, isLoading, isRefreshing, refreshData, deleteTransaction } = useApp();
+  const { transactions, monthlyCashFlow, householdName, isLoading, isRefreshing, refreshData } = useApp();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [modalInitialType, setModalInitialType] = useState<'income' | 'expenditure'>('income');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [donutY, setDonutY] = useState(0);
   const [isDonutVisible, setIsDonutVisible] = useState(false);
-  const windowHeight = Dimensions.get('window').height;
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (isDonutVisible) return;
@@ -52,16 +49,10 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'expenditure').reduce((s, t) => s + t.amount, 0);
-  const totalSavings = transactions.filter(t => t.type === 'savings').reduce((s, t) => s + t.amount, 0);
   const balance = totalIncome - totalExpense;
   const savingsRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 0;
   const recentTransactions = [...transactions].sort((a, b) => new Date(b.fullDate).getTime() - new Date(a.fullDate).getTime()).slice(0, 5);
   const hasNoData = transactions.length === 0;
-
-  const headerFadeAnim = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.timing(headerFadeAnim, { toValue: 1, duration: 600, delay: 100, useNativeDriver: true }).start();
-  }, []);
 
   if (isLoading) {
     return (
@@ -74,7 +65,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <Header onOpenAddModal={() => handleOpenAddModal()} />
+      <Header />
 
       <ScrollView
         style={styles.scroll}
@@ -82,7 +73,16 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={async () => { setIsDonutVisible(false); await refreshData(); }} tintColor={Colors.brand} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={async () => {
+              setIsDonutVisible(false);
+              await refreshData();
+            }}
+            tintColor={Colors.brand}
+          />
+        }
       >
         {/* ── Hero Balance Card ─────────────────────────── */}
         <View style={styles.section}>
@@ -95,57 +95,58 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           />
         </View>
 
-        {/* ── Stat Pills Row ───────────────────────────── */}
-        <Animated.View style={[styles.statRow, { opacity: headerFadeAnim }]}>
-          <View style={[styles.statPill, { borderColor: Colors.incomeBorder }]}>
-            <View style={[styles.statPillIcon, { backgroundColor: Colors.incomeSubdued }]}>
-              <TrendingUp size={13} color={Colors.income} />
-            </View>
-            <View>
-              <Text style={styles.statPillLabel}>Income</Text>
-              <Text style={[styles.statPillValue, { color: Colors.income }]}>{formatCurrency(totalIncome)}</Text>
-            </View>
+        {/* ── Cash Flow Chart (Rendered before Export) ───── */}
+        {!hasNoData && (
+          <View style={styles.section}>
+            <CashFlowAreaChart data={monthlyCashFlow} />
           </View>
+        )}
 
-          <View style={[styles.statPill, { borderColor: Colors.expenseBorder }]}>
-            <View style={[styles.statPillIcon, { backgroundColor: Colors.expenseSubdued }]}>
-              <TrendingDown size={13} color={Colors.expense} />
-            </View>
-            <View>
-              <Text style={styles.statPillLabel}>Expenses</Text>
-              <Text style={[styles.statPillValue, { color: Colors.expense }]}>{formatCurrency(totalExpense)}</Text>
-            </View>
-          </View>
-
-          {totalSavings > 0 && (
-            <View style={[styles.statPill, { borderColor: Colors.savingsBorder }]}>
-              <View style={[styles.statPillIcon, { backgroundColor: Colors.savingsSubdued }]}>
-                <PiggyBank size={13} color={Colors.savings} />
-              </View>
-              <View>
-                <Text style={styles.statPillLabel}>Savings</Text>
-                <Text style={[styles.statPillValue, { color: Colors.savings }]}>{formatCurrency(totalSavings)}</Text>
-              </View>
-            </View>
-          )}
-        </Animated.View>
-
-        {/* ── Quick Actions ─────────────────────────────── */}
+        {/* ── Descriptive Financial Statement Card ───────── */}
         <View style={styles.section}>
-          <View style={styles.quickActions}>
-            <TouchableOpacity style={[styles.qaBtn, styles.qaBtnIncome]} onPress={() => handleOpenAddModal('income')} activeOpacity={0.75}>
-              <Plus size={15} color={Colors.income} />
-              <Text style={[styles.qaBtnText, { color: Colors.income }]}>Income</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.qaBtn, styles.qaBtnExpense]} onPress={() => handleOpenAddModal('expenditure')} activeOpacity={0.75}>
-              <Plus size={15} color={Colors.expense} />
-              <Text style={[styles.qaBtnText, { color: Colors.expense }]}>Expense</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.qaBtn, styles.qaBtnExport]} onPress={() => setIsExportModalOpen(true)} activeOpacity={0.75}>
-              <FileDown size={15} color={Colors.brand} />
-              <Text style={[styles.qaBtnText, { color: Colors.brand }]}>Export</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.exportBannerCard}
+            onPress={() => setIsExportModalOpen(true)}
+            activeOpacity={0.82}
+          >
+            <View style={styles.exportBannerTop}>
+              <View style={styles.exportBannerLeft}>
+                <View style={styles.exportIconBadge}>
+                  <FileText size={18} color={Colors.brand} />
+                </View>
+                <View style={styles.exportTextWrap}>
+                  <View style={styles.exportEyebrowRow}>
+                    <Text style={styles.exportEyebrow}>FINANCIAL REPORT</Text>
+                    <View style={styles.exportPill}>
+                      <Text style={styles.exportPillText}>AUDIT READY</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.exportTitle}>Monthly Household Statement</Text>
+                  <Text style={styles.exportSubtitle}>
+                    Download complete itemized PDF breakdown with receipts attached
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.exportActionBtn}>
+                <Download size={12} color={Colors.white} />
+                <Text style={styles.exportActionText}>Export</Text>
+              </View>
+            </View>
+
+            {/* Scope Badges */}
+            <View style={styles.exportTimelineStrip}>
+              <View style={styles.scopeBadge}>
+                <Text style={styles.scopeBadgeText}>Schedule A: Cash Flow</Text>
+              </View>
+              <View style={styles.scopeBadge}>
+                <Text style={styles.scopeBadgeText}>Schedule B: Categorical</Text>
+              </View>
+              <View style={styles.scopeBadge}>
+                <Text style={styles.scopeBadgeText}>Schedule D: Itemized Ledger</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── Getting Started (if no data) ──────────────── */}
@@ -155,17 +156,13 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           </View>
         )}
 
-        {/* ── Cash Flow Chart ───────────────────────────── */}
-        {!hasNoData && (
-          <View style={styles.section}>
-            <CashFlowAreaChart data={monthlyCashFlow} />
-          </View>
-        )}
-
         {/* ── Category Breakdown ────────────────────────── */}
         {!hasNoData && totalExpense > 0 && (
-          <View style={styles.section}>
-            <CategoryDonutChart transactions={transactions} />
+          <View
+            style={styles.section}
+            onLayout={(e) => setDonutY(e.nativeEvent.layout.y)}
+          >
+            <CategoryDonutChart transactions={transactions} isVisible={isDonutVisible} />
           </View>
         )}
 
@@ -216,76 +213,115 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 32 },
   section: { paddingHorizontal: 16, marginTop: 16 },
 
-  // Stat pills
-  statRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginTop: 12,
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  statPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  // Descriptive Export Banner Card
+  exportBannerCard: {
     backgroundColor: Colors.surfaceCard,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 11,
-    paddingVertical: 9,
-    flex: 1,
-    minWidth: 100,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    padding: 16,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  statPillIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statPillLabel: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    fontWeight: '500',
-    marginBottom: 1,
-  },
-  statPillValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    fontFamily: 'monospace',
-    letterSpacing: -0.3,
-  },
-
-  // Quick actions
-  quickActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  qaBtn: {
-    flex: 1,
+  exportBannerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  qaBtnIncome: {
-    backgroundColor: Colors.incomeSubdued,
-    borderColor: Colors.incomeBorder,
+  exportBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
   },
-  qaBtnExpense: {
-    backgroundColor: Colors.expenseSubdued,
-    borderColor: Colors.expenseBorder,
-  },
-  qaBtnExport: {
+  exportIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     backgroundColor: Colors.brandSubdued,
+    borderWidth: 1,
     borderColor: Colors.brandBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  qaBtnText: {
-    fontSize: 12.5,
+  exportTextWrap: {
+    flex: 1,
+  },
+  exportEyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+  },
+  exportEyebrow: {
+    fontSize: 9.5,
+    fontFamily: 'monospace',
     fontWeight: '700',
+    color: Colors.brand,
+    letterSpacing: 0.8,
+  },
+  exportPill: {
+    backgroundColor: 'rgba(94, 106, 210, 0.18)',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(94, 106, 210, 0.35)',
+  },
+  exportPillText: {
+    fontSize: 8.5,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: Colors.brand,
+  },
+  exportTitle: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: Colors.text,
+    letterSpacing: -0.2,
+  },
+  exportSubtitle: {
+    fontSize: 10.5,
+    color: Colors.textMuted,
+    marginTop: 2,
+    lineHeight: 15,
+  },
+  exportActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.brand,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  exportActionText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  exportTimelineStrip: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  scopeBadge: {
+    backgroundColor: Colors.surfaceHighlight,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  scopeBadgeText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    color: Colors.textMuted,
   },
 
   // Section headers
@@ -335,4 +371,3 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
-

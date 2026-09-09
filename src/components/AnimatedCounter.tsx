@@ -9,6 +9,9 @@ interface AnimatedCounterProps {
   style?: StyleProp<TextStyle>;
   duration?: number;
   decimals?: number;
+  numberOfLines?: number;
+  adjustsFontSizeToFit?: boolean;
+  minimumFontScale?: number;
 }
 
 export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
@@ -18,6 +21,9 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   style,
   duration = 1200,
   decimals = 2,
+  numberOfLines,
+  adjustsFontSizeToFit,
+  minimumFontScale,
 }) => {
   const [displayed, setDisplayed] = useState(0);
   const animRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -61,7 +67,13 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   }).format(Math.abs(displayed));
 
   return (
-    <Text style={style}>{prefix}{formatted}{suffix}</Text>
+    <Text
+      style={style}
+      numberOfLines={numberOfLines}
+      adjustsFontSizeToFit={adjustsFontSizeToFit}
+      minimumFontScale={minimumFontScale}
+    >
+      {prefix}{formatted}{suffix}
+    </Text>
   );
 };
-

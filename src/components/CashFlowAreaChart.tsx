@@ -26,7 +26,7 @@ import { MonthlyCashFlow } from '../types';
 import { formatCurrency } from '../lib/currency';
 
 const CHART_H = 175;
-const CHART_PAD = { top: 16, bottom: 28, left: 38, right: 16 };
+const CHART_PAD = { top: 16, bottom: 26, left: 34, right: 18 };
 
 interface CashFlowAreaChartProps {
   data: MonthlyCashFlow[];
@@ -228,7 +228,7 @@ export const CashFlowAreaChart: React.FC<CashFlowAreaChartProps> = ({
   });
 
   return (
-    <View style={styles.wrapper} onLayout={handleLayout}>
+    <View style={styles.wrapper}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Text style={styles.title}>Cash Flow</Text>
@@ -273,7 +273,11 @@ export const CashFlowAreaChart: React.FC<CashFlowAreaChartProps> = ({
           <Text style={styles.emptyText}>Add transactions to see your cash flow chart</Text>
         </View>
       ) : (
-        <View style={{ width: chartWidth, height: CHART_H, position: 'relative' }} {...panResponder.panHandlers}>
+        <View
+          style={styles.chartArea}
+          onLayout={handleLayout}
+          {...panResponder.panHandlers}
+        >
           {/* Base SVG Layer: Grid lines & Axis Labels */}
           <Svg width={chartWidth} height={CHART_H} style={StyleSheet.absoluteFill}>
             <Defs>
@@ -486,8 +490,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 10,
     minHeight: 24,
+  },
+  chartArea: {
+    width: '100%',
+    height: CHART_H,
+    position: 'relative',
+    marginTop: 2,
   },
   titleContainer: {
     flexDirection: 'row',

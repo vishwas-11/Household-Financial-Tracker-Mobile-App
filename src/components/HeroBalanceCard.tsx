@@ -1,11 +1,11 @@
 ﻿// src/components/HeroBalanceCard.tsx
+// High-intensity Brushed Titanium & Specular Platinum Metallic Finish
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Wallet, ShieldCheck } from 'lucide-react-native';
 import { AnimatedCounter } from './AnimatedCounter';
 import { Colors } from '../constants/colors';
-import { formatCurrency } from '../lib/currency';
 
 interface HeroBalanceCardProps {
   balance: number;
@@ -32,81 +32,175 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
     ]).start();
   }, []);
 
-  const isPositive = balance >= 0;
-
   return (
     <Animated.View style={[styles.wrapper, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
+      {/* Precision Brushed Titanium Bezel Frame */}
       <LinearGradient
-        colors={['#3B5BDB', '#1971C2', '#0C8599'] as [string, string, ...string[]]}
+        colors={['#94A3B8', '#475569', '#1E293B', '#64748B', '#CBD5E1', '#334155']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.gradient}
+        style={styles.bezelBorder}
       >
-        {/* Subtle texture overlay */}
-        <View style={styles.textureOverlay} />
+        {/* Rich Brushed Obsidian/Titanium Surface */}
+        <LinearGradient
+          colors={['#1F2430', '#13151D', '#0A0C11', '#171B24'] as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradient}
+        >
+          {/* Luminous Specular Platinum Chamfer Light Strip */}
+          <LinearGradient
+            colors={[
+              'transparent',
+              'rgba(148, 163, 184, 0.4)',
+              '#FFFFFF',
+              '#E2E8F0',
+              'rgba(203, 213, 225, 0.8)',
+              'rgba(148, 163, 184, 0.3)',
+              'transparent',
+            ]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.topMetallicSheen}
+          />
 
-        {/* Header row */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerLeft}>
-            <View style={styles.walletIcon}>
-              <Wallet size={14} color="rgba(255,255,255,0.9)" />
+          {/* Soft ambient metallic glow beneath top edge */}
+          <LinearGradient
+            colors={['rgba(203, 213, 225, 0.12)', 'transparent']}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.topAmbientGlow}
+            pointerEvents="none"
+          />
+
+          {/* Primary diagonal brushed metallic reflection streak */}
+          <LinearGradient
+            colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.02)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.metallicDiagonalStreakPrimary}
+            pointerEvents="none"
+          />
+
+          {/* Secondary counter-diagonal brushed metallic streak */}
+          <LinearGradient
+            colors={['rgba(203, 213, 225, 0.06)', 'rgba(255, 255, 255, 0.01)', 'transparent']}
+            start={{ x: 1, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.metallicDiagonalStreakSecondary}
+            pointerEvents="none"
+          />
+
+          {/* Card Header: Household Identity & Status */}
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <LinearGradient
+                colors={['#2D3342', '#181B22']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.walletIcon}
+              >
+                <Wallet size={13.5} color="#F1F5F9" />
+              </LinearGradient>
+              <Text style={styles.householdLabel} numberOfLines={1}>
+                {householdName}
+              </Text>
             </View>
-            <Text style={styles.householdLabel} numberOfLines={1}>{householdName}</Text>
+
+            {/* Titanium / Emerald Status Pill */}
+            <View style={styles.headerRightBadgeRow}>
+              {savingsRate > 0 && (
+                <View style={styles.savingsRateBadge}>
+                  <TrendingUp size={11} color="#10B981" />
+                  <Text style={styles.savingsRateText}>{savingsRate}% saved</Text>
+                </View>
+              )}
+              {/* Polished Metallic Chip Badge */}
+              <LinearGradient
+                colors={['#2A303D', '#151820']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.metallicChip}
+              >
+                <ShieldCheck size={11.5} color="#CBD5E1" />
+              </LinearGradient>
+            </View>
           </View>
-          {savingsRate > 0 && (
-            <View style={styles.savingsRateBadge}>
-              <TrendingUp size={10} color="#10B981" />
-              <Text style={styles.savingsRateText}>{savingsRate}% saved</Text>
-            </View>
-          )}
-        </View>
 
-        {/* Balance */}
-        <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
-        <AnimatedCounter
-          value={balance}
-          prefix={balance < 0 ? '-₹' : '₹'}
-          style={styles.balanceAmount}
-          duration={2600}
-        />
-
-        {/* Divider */}
-        <View style={styles.divider} />
-
-        {/* Income / Expense Pills */}
-        <View style={styles.pillsRow}>
-          <View style={styles.pill}>
-            <View style={[styles.pillIcon, styles.pillIconIncome]}>
-              <TrendingUp size={12} color="#10B981" />
+          {/* Balance Title & Amount */}
+          <View style={styles.balanceSection}>
+            <View style={styles.balanceLabelRow}>
+              <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
+              <View style={styles.metallicDot} />
             </View>
-            <View>
-              <Text style={styles.pillLabel}>Total Income</Text>
-              <AnimatedCounter
-                value={totalIncome}
-                prefix="₹"
-                style={styles.pillAmount}
-                duration={2400}
-              />
-            </View>
+            <AnimatedCounter
+              value={balance}
+              prefix={balance < 0 ? '-₹' : '₹'}
+              style={styles.balanceAmount}
+              duration={2600}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}
+            />
           </View>
 
-          <View style={styles.pillDivider} />
+          {/* Hairline Platinum Specular Divider */}
+          <LinearGradient
+            colors={['transparent', 'rgba(203, 213, 225, 0.42)', 'transparent']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.divider}
+          />
 
-          <View style={styles.pill}>
-            <View style={[styles.pillIcon, styles.pillIconExpense]}>
-              <TrendingDown size={12} color="#F43F5E" />
-            </View>
-            <View>
-              <Text style={styles.pillLabel}>Total Expenses</Text>
-              <AnimatedCounter
-                value={totalExpense}
-                prefix="₹"
-                style={[styles.pillAmount, styles.pillAmountExpense]}
-                duration={2400}
-              />
-            </View>
+          {/* Income / Expense Sub-Cards with responsive auto-shrinking text */}
+          <View style={styles.pillsRow}>
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.02)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.pillCard}
+            >
+              <View style={[styles.pillIcon, styles.pillIconIncome]}>
+                <TrendingUp size={12.5} color="#10B981" />
+              </View>
+              <View style={styles.pillTextWrap}>
+                <Text style={styles.pillLabel} numberOfLines={1}>Total Income</Text>
+                <AnimatedCounter
+                  value={totalIncome}
+                  prefix="₹"
+                  style={[styles.pillAmount, styles.pillAmountIncome]}
+                  duration={2400}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                />
+              </View>
+            </LinearGradient>
+
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.02)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.pillCard}
+            >
+              <View style={[styles.pillIcon, styles.pillIconExpense]}>
+                <TrendingDown size={12.5} color="#F43F5E" />
+              </View>
+              <View style={styles.pillTextWrap}>
+                <Text style={styles.pillLabel} numberOfLines={1}>Total Expenses</Text>
+                <AnimatedCounter
+                  value={totalExpense}
+                  prefix="₹"
+                  style={[styles.pillAmount, styles.pillAmountExpense]}
+                  duration={2400}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                />
+              </View>
+            </LinearGradient>
           </View>
-        </View>
+        </LinearGradient>
       </LinearGradient>
     </Animated.View>
   );
@@ -115,56 +209,98 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 22,
-    overflow: 'hidden',
-    shadowColor: '#3B5BDB',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.55,
+    shadowRadius: 22,
     elevation: 16,
     marginBottom: 4,
   },
-  gradient: {
-    padding: 22,
-    paddingBottom: 20,
+  bezelBorder: {
+    borderRadius: 22,
+    padding: 1.5, // Crisp 1.5px titanium chamfer bezel
+    overflow: 'hidden',
   },
-  textureOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+  gradient: {
+    borderRadius: 20.5,
+    padding: 20,
+    paddingBottom: 18,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  topMetallicSheen: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 3,
+  },
+  topAmbientGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 28,
+  },
+  metallicDiagonalStreakPrimary: {
+    position: 'absolute',
+    top: -50,
+    right: -30,
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    transform: [{ rotate: '25deg' }],
+  },
+  metallicDiagonalStreakSecondary: {
+    position: 'absolute',
+    bottom: -40,
+    left: -20,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    transform: [{ rotate: '-15deg' }],
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 18,
+    marginBottom: 16,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 9,
   },
   walletIcon: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    width: 30,
+    height: 30,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: 'rgba(203, 213, 225, 0.35)', // Sharp platinum rim
     alignItems: 'center',
     justifyContent: 'center',
   },
   householdLabel: {
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.85)',
+    color: '#F8FAFC',
+    letterSpacing: 0.1,
     maxWidth: 160,
+  },
+  headerRightBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   savingsRateBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    backgroundColor: 'rgba(16, 185, 129, 0.14)',
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.4)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    borderColor: 'rgba(16, 185, 129, 0.35)',
+    paddingHorizontal: 8.5,
+    paddingVertical: 3.5,
     borderRadius: 20,
   },
   savingsRateText: {
@@ -172,12 +308,35 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#10B981',
   },
+  metallicChip: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(203, 213, 225, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  balanceSection: {
+    marginTop: 2,
+  },
+  balanceLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
   balanceLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: 'rgba(255,255,255,0.55)',
-    letterSpacing: 1.5,
-    marginBottom: 6,
+    color: '#94A3B8',
+    letterSpacing: 1.6,
+  },
+  metallicDot: {
+    width: 4.5,
+    height: 4.5,
+    borderRadius: 2.5,
+    backgroundColor: '#CBD5E1',
   },
   balanceAmount: {
     fontSize: 38,
@@ -185,55 +344,67 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: -1,
     fontFamily: 'monospace',
+    textShadowColor: 'rgba(0, 0, 0, 0.65)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
   divider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    marginVertical: 16,
+    height: 1.5,
+    marginVertical: 14,
+    width: '100%',
   },
   pillsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
   },
-  pill: {
+  pillCard: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(203, 213, 225, 0.16)', // Prominent metallic inset border
+    borderRadius: 13,
+    paddingVertical: 9,
+    paddingHorizontal: 9,
   },
   pillIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   pillIconIncome: {
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    backgroundColor: 'rgba(16, 185, 129, 0.14)',
+    borderColor: 'rgba(16, 185, 129, 0.3)',
   },
   pillIconExpense: {
-    backgroundColor: 'rgba(244, 63, 94, 0.2)',
+    backgroundColor: 'rgba(244, 63, 94, 0.14)',
+    borderColor: 'rgba(244, 63, 94, 0.3)',
+  },
+  pillTextWrap: {
+    flex: 1,
+    minWidth: 0,
   },
   pillLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: 9.5,
+    color: '#94A3B8',
     fontWeight: '500',
     marginBottom: 2,
   },
   pillAmount: {
-    fontSize: 15,
+    fontSize: 12.8,
     fontWeight: '700',
-    color: '#FFFFFF',
     fontFamily: 'monospace',
+    letterSpacing: -0.2,
+  },
+  pillAmountIncome: {
+    color: '#10B981',
   },
   pillAmountExpense: {
-    color: '#FCA5A5',
-  },
-  pillDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    marginHorizontal: 14,
+    color: '#F43F5E',
   },
 });
-
