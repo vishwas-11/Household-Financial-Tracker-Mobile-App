@@ -7,9 +7,10 @@ import { AppNavigator } from './AppNavigator';
 import { useApp } from '../context/AppContext';
 import { Colors } from '../constants/colors';
 import { HouseholdFundsLogo } from '../components/HouseholdFundsLogo';
+import { HouseholdSwitcherModal } from '../components/HouseholdSwitcherModal';
 
 export const RootNavigator: React.FC = () => {
-  const { user, isLoading } = useApp();
+  const { user, isLoading, isHouseholdSwitcherOpen, closeHouseholdSwitcher } = useApp();
 
   if (isLoading) {
     return (
@@ -23,15 +24,24 @@ export const RootNavigator: React.FC = () => {
   }
 
   return (
-    <NavigationContainer>
-      {!user ? (
-        <AuthNavigator initialRouteName="Login" />
-      ) : !user.householdId ? (
-        <AuthNavigator initialRouteName="Onboarding" />
-      ) : (
-        <AppNavigator />
+    <>
+      <NavigationContainer>
+        {!user ? (
+          <AuthNavigator initialRouteName="Login" />
+        ) : !user.householdId ? (
+          <AuthNavigator initialRouteName="Onboarding" />
+        ) : (
+          <AppNavigator />
+        )}
+      </NavigationContainer>
+
+      {user && (
+        <HouseholdSwitcherModal
+          visible={isHouseholdSwitcherOpen}
+          onClose={closeHouseholdSwitcher}
+        />
       )}
-    </NavigationContainer>
+    </>
   );
 };
 

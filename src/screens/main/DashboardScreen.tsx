@@ -11,6 +11,7 @@ import {
 import { Colors } from '../../constants/colors';
 import { Header } from '../../components/Header';
 import { HeroBalanceCard } from '../../components/HeroBalanceCard';
+import { RecurringCommitmentsCard } from '../../components/RecurringCommitmentsCard';
 import { CashFlowAreaChart } from '../../components/CashFlowAreaChart';
 import { CategoryDonutChart } from '../../components/CategoryDonutChart';
 import { TransactionItem } from '../../components/TransactionItem';
@@ -22,7 +23,7 @@ import { DashboardSkeleton } from '../../components/SkeletonLoader';
 import { useApp } from '../../context/AppContext';
 
 export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { transactions, monthlyCashFlow, householdName, isLoading, isRefreshing, refreshData } = useApp();
+  const { transactions, recurringItems, deductRecurringNow, monthlyCashFlow, householdName, isLoading, isRefreshing, refreshData } = useApp();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [modalInitialType, setModalInitialType] = useState<'income' | 'expenditure'>('income');
@@ -50,6 +51,9 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === 'expenditure').reduce((s, t) => s + t.amount, 0);
   const balance = totalIncome - totalExpense;
+  const totalRecurringExpense = (recurringItems || [])
+    .filter((r) => r.type === 'expenditure')
+    .reduce((sum, r) => sum + r.amount, 0);
   const savingsRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 0;
   const recentTransactions = [...transactions].sort((a, b) => new Date(b.fullDate).getTime() - new Date(a.fullDate).getTime()).slice(0, 5);
   const hasNoData = transactions.length === 0;
@@ -92,13 +96,27 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             totalExpense={totalExpense}
             savingsRate={savingsRate}
             householdName={householdName}
+            recurringMonthlyOutflow={totalRecurringExpense}
           />
         </View>
 
-        {/* ── Cash Flow Chart (Rendered before Export) ───── */}
+                {/* ── Cash Flow Chart (Rendered before Export) ───── */}
         {!hasNoData && (
           <View style={styles.section}>
             <CashFlowAreaChart data={monthlyCashFlow} />
+          </View>
+        )}
+
+        {/* ── Scheduled Recurring Obligations ───────────── */}
+        {recurringItems && recurringItems.length > 0 && (
+          <View style={styles.section}>
+            <RecurringCommitmentsCard
+              recurringItems={recurringItems}
+              transactions={transactions}
+              currentBalance={balance}
+              onNavigateToRecurring={() => navigation?.navigate?.('Recurring')}
+              onDeductNow={deductRecurringNow}
+            />
           </View>
         )}
 

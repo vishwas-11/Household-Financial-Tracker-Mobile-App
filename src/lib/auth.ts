@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import bcrypt from 'bcryptjs';
 import * as Crypto from 'expo-crypto';
 import { supabase } from './supabase';
-import { UserSession } from '../types';
+import { UserSession, HouseholdInfo } from '../types';
 
 export const SESSION_STORAGE_KEY = '@hft_mobile_session';
 
@@ -106,6 +106,60 @@ export async function getUserSession(): Promise<UserSession | null> {
   }
 }
 
+
+/**
+ * Fetch all households a user owns or is an active member of
+ */
+export async function fetchUserHouseholds(userId: string): Promise<HouseholdInfo[]> {
+  try {
+    const list: HouseholdInfo[] = [];
+
+    // 1. Households user owns
+    const { data: ownedHhs } = await supabase
+      .from('households')
+      .select('id, name, invite_code')
+      .eq('owner_id', userId);
+
+    if (ownedHhs) {
+      ownedHhs.forEach((h: any) => {
+        list.push({
+          id: h.id,
+          name: h.name,
+          inviteCode: h.invite_code,
+          role: 'Owner',
+          isOwner: true,
+        });
+      });
+    }
+
+    // 2. Households user is a member of
+    const { data: memberships } = await supabase
+      .from('members')
+      .select('household_id, role, households(id, name, invite_code, owner_id)')
+      .eq('user_id', userId);
+
+    if (memberships) {
+      memberships.forEach((m: any) => {
+        const hh = m.households;
+        if (hh && !list.some((existing) => existing.id === hh.id)) {
+          list.push({
+            id: hh.id,
+            name: hh.name,
+            inviteCode: hh.invite_code,
+            role: m.role || 'Contributor',
+            isOwner: hh.owner_id === userId,
+          });
+        }
+      });
+    }
+
+    return list;
+  } catch (err) {
+    console.warn('fetchUserHouseholds error:', err);
+    return [];
+  }
+}
+
 export async function clearUserSession(): Promise<void> {
   await AsyncStorage.removeItem(SESSION_STORAGE_KEY);
 }
@@ -142,50 +196,18 @@ export async function signInWithCredentials(
       return { success: false, error: 'Invalid email or password.' };
     }
 
-    // Lookup household for user
-    let householdId: string | undefined = undefined;
-    let householdName: string | undefined = undefined;
-    let inviteCode: string | undefined = undefined;
-
-    const { data: ownedHh } = await supabase
-      .from('households')
-      .select('id, name, invite_code')
-      .eq('owner_id', user.id)
-      .maybeSingle();
-
-    if (ownedHh) {
-      householdId = ownedHh.id;
-      householdName = ownedHh.name;
-      inviteCode = ownedHh.invite_code;
-    } else {
-      const { data: membership } = await supabase
-        .from('members')
-        .select('household_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (membership?.household_id) {
-        const { data: memberHh } = await supabase
-          .from('households')
-          .select('id, name, invite_code')
-          .eq('id', membership.household_id)
-          .maybeSingle();
-
-        if (memberHh) {
-          householdId = memberHh.id;
-          householdName = memberHh.name;
-          inviteCode = memberHh.invite_code;
-        }
-      }
-    }
+    // Lookup all households user owns or has joined
+    const availableHouseholds = await fetchUserHouseholds(user.id);
+    const activeHh = availableHouseholds[0];
 
     const session: UserSession = {
       userId: user.id,
       email: user.email,
       name: user.name,
-      householdId,
-      householdName,
-      inviteCode,
+      householdId: activeHh?.id,
+      householdName: activeHh?.name,
+      inviteCode: activeHh?.inviteCode,
+      availableHouseholds,
     };
 
     await saveUserSession(session);
@@ -285,11 +307,13 @@ export async function createHouseholdForUser(
 
     await supabase.from('members').insert([initialMember]);
 
+    const availableHouseholds = await fetchUserHouseholds(user.userId);
     const updatedSession: UserSession = {
       ...user,
       householdId,
       householdName: trimmedName,
       inviteCode: finalCode,
+      availableHouseholds,
     };
 
     await saveUserSession(updatedSession);
@@ -334,11 +358,13 @@ export async function joinHouseholdWithCode(
 
     await supabase.from('members').insert([newMember]);
 
+    const availableHouseholds = await fetchUserHouseholds(user.userId);
     const updatedSession: UserSession = {
       ...user,
       householdId: hh.id,
       householdName: hh.name,
       inviteCode: hh.invite_code,
+      availableHouseholds,
     };
 
     await saveUserSession(updatedSession);

@@ -18,7 +18,7 @@ import { useApp } from '../../context/AppContext';
 import { formatCurrency } from '../../lib/currency';
 
 export const RecurringScreen: React.FC = () => {
-  const { recurringItems, deleteRecurring, isRefreshing, refreshData } = useApp();
+  const { recurringItems, transactions, deductRecurringNow, deleteRecurring, isRefreshing, refreshData } = useApp();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 

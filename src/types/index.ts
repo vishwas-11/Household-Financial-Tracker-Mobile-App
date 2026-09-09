@@ -49,6 +49,14 @@ export interface MonthlyCashFlow {
   expenditure: number;
 }
 
+export interface HouseholdInfo {
+  id: string;
+  name: string;
+  inviteCode: string;
+  role?: string;
+  isOwner?: boolean;
+}
+
 export interface UserSession {
   userId: string;
   email: string;
@@ -56,4 +64,5 @@ export interface UserSession {
   householdId?: string;
   householdName?: string;
   inviteCode?: string;
+  availableHouseholds?: HouseholdInfo[];
 }

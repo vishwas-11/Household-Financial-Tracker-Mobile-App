@@ -173,7 +173,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
           </Svg>
 
           {/* Center totals with animated counter */}
-          <View style={styles.centerOverlay} pointerEvents="none">
+          <View style={[styles.centerOverlay, { pointerEvents: 'none' }]}>
             <AnimatedCounter
               value={isVisible ? total : 0}
               prefix="₹"

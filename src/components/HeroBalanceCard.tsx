@@ -1,11 +1,12 @@
 ﻿// src/components/HeroBalanceCard.tsx
 // High-intensity Brushed Titanium & Specular Platinum Metallic Finish
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { TrendingUp, TrendingDown, Wallet, ShieldCheck } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Wallet, ShieldCheck, Repeat } from 'lucide-react-native';
 import { AnimatedCounter } from './AnimatedCounter';
 import { Colors } from '../constants/colors';
+import { formatCurrency } from '../lib/currency';
 
 interface HeroBalanceCardProps {
   balance: number;
@@ -13,6 +14,7 @@ interface HeroBalanceCardProps {
   totalExpense: number;
   savingsRate: number;
   householdName: string;
+  recurringMonthlyOutflow?: number;
 }
 
 export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
@@ -21,14 +23,15 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
   totalExpense,
   savingsRate,
   householdName,
+  recurringMonthlyOutflow = 0,
 }) => {
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, tension: 40, friction: 9, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
   }, []);
 
@@ -69,8 +72,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             colors={['rgba(203, 213, 225, 0.12)', 'transparent']}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
-            style={styles.topAmbientGlow}
-            pointerEvents="none"
+            style={[styles.topAmbientGlow, { pointerEvents: 'none' }]}
           />
 
           {/* Primary diagonal brushed metallic reflection streak */}
@@ -78,8 +80,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             colors={['rgba(255, 255, 255, 0.08)', 'rgba(255, 255, 255, 0.02)', 'transparent']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.metallicDiagonalStreakPrimary}
-            pointerEvents="none"
+            style={[styles.metallicDiagonalStreakPrimary, { pointerEvents: 'none' }]}
           />
 
           {/* Secondary counter-diagonal brushed metallic streak */}
@@ -87,8 +88,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             colors={['rgba(203, 213, 225, 0.06)', 'rgba(255, 255, 255, 0.01)', 'transparent']}
             start={{ x: 1, y: 0 }}
             end={{ x: 0, y: 1 }}
-            style={styles.metallicDiagonalStreakSecondary}
-            pointerEvents="none"
+            style={[styles.metallicDiagonalStreakSecondary, { pointerEvents: 'none' }]}
           />
 
           {/* Card Header: Household Identity & Status */}
@@ -130,8 +130,18 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
           {/* Balance Title & Amount */}
           <View style={styles.balanceSection}>
             <View style={styles.balanceLabelRow}>
-              <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
-              <View style={styles.metallicDot} />
+              <View style={styles.balanceLabelLeft}>
+                <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
+                <View style={styles.metallicDot} />
+              </View>
+              {recurringMonthlyOutflow > 0 && (
+                <View style={styles.recurringChip}>
+                  <Repeat size={9.5} color="#A5B4FC" />
+                  <Text style={styles.recurringChipText}>
+                    {formatCurrency(recurringMonthlyOutflow, { showDecimals: false })}/mo recurring
+                  </Text>
+                </View>
+              )}
             </View>
             <AnimatedCounter
               value={balance}
@@ -209,11 +219,18 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
 const styles = StyleSheet.create({
   wrapper: {
     borderRadius: 22,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.55,
-    shadowRadius: 22,
-    elevation: 16,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 10px 22px rgba(0, 0, 0, 0.55)',
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.55,
+        shadowRadius: 22,
+        elevation: 16,
+      },
+    }),
     marginBottom: 4,
   },
   bezelBorder: {
@@ -323,8 +340,30 @@ const styles = StyleSheet.create({
   balanceLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'space-between',
     marginBottom: 6,
+  },
+  balanceLabelLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  recurringChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4.5,
+    backgroundColor: 'rgba(99, 102, 241, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.32)',
+    paddingHorizontal: 7.5,
+    paddingVertical: 2.5,
+    borderRadius: 6,
+  },
+  recurringChipText: {
+    fontSize: 9.5,
+    fontFamily: 'monospace',
+    fontWeight: '600',
+    color: '#C7D2FE',
   },
   balanceLabel: {
     fontSize: 10,
@@ -344,9 +383,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     letterSpacing: -1,
     fontFamily: 'monospace',
-    textShadowColor: 'rgba(0, 0, 0, 0.65)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 6,
+    ...Platform.select({
+      web: {
+        textShadow: '0 2px 6px rgba(0, 0, 0, 0.65)',
+      },
+      default: {
+        textShadowColor: 'rgba(0, 0, 0, 0.65)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 6,
+      },
+    }),
   },
   divider: {
     height: 1.5,

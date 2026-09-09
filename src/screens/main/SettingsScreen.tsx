@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -23,6 +24,10 @@ import {
   LogOut,
   FolderArchive,
   HelpCircle,
+  Building,
+  ArrowRightLeft,
+  Plus,
+  ShieldCheck,
 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { Header } from '../../components/Header';
@@ -41,7 +46,16 @@ export const SettingsScreen: React.FC = () => {
     resetOnboarding,
     user,
     logout,
+    userHouseholds,
+    activeHouseholdId,
+    switchHousehold,
+    joinHousehold,
+    openHouseholdSwitcher,
   } = useApp();
+
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
 
   const [nameInput, setNameInput] = useState(householdName);
   const [isSaved, setIsSaved] = useState(false);
@@ -59,6 +73,39 @@ export const SettingsScreen: React.FC = () => {
     await Clipboard.setStringAsync(inviteCode);
     setCodeCopied(true);
     setTimeout(() => setCodeCopied(false), 2000);
+  };
+
+  const handleJoinHousehold = async () => {
+    const code = joinCodeInput.trim().toUpperCase();
+    if (!code) {
+      Alert.alert('Required', 'Please enter a household invite code.');
+      return;
+    }
+    setIsJoining(true);
+    try {
+      const res = await joinHousehold(code);
+      if (res.success) {
+        setJoinCodeInput('');
+        Alert.alert('Success', 'You have joined the household!');
+      } else {
+        Alert.alert('Join Failed', res.error || 'Invalid invite code.');
+      }
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleQuickSwitch = async (id: string) => {
+    if (id === activeHouseholdId) return;
+    setSwitchingId(id);
+    try {
+      const res = await switchHousehold(id);
+      if (!res.success) {
+        Alert.alert('Switch Error', res.error || 'Failed to switch household.');
+      }
+    } finally {
+      setSwitchingId(null);
+    }
   };
 
   const handleResetGuide = async () => {
@@ -569,6 +616,111 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.textMuted,
     lineHeight: 16,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  miniLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.textMuted,
+    letterSpacing: 0.8,
+    fontFamily: 'monospace',
+    marginBottom: 6,
+  },
+  householdChipsContainer: {
+    gap: 6,
+    marginTop: 4,
+  },
+  hhChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  hhChipActive: {
+    borderColor: Colors.brand,
+    backgroundColor: Colors.surfaceHighlight,
+  },
+  hhChipLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    marginRight: 10,
+  },
+  hhChipText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  hhChipTextActive: {
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  activeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.3)',
+  },
+  activeBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.income,
+    letterSpacing: 0.5,
+    fontFamily: 'monospace',
+  },
+  switchLinkText: {
+    fontSize: 12,
+    color: Colors.brand,
+    fontWeight: '600',
+  },
+  joinBox: {
+    marginTop: 6,
+    gap: 2,
+  },
+  joinBtn: {
+    backgroundColor: Colors.brand,
+    borderRadius: 6,
+    paddingHorizontal: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 70,
+  },
+  joinBtnText: {
+    fontSize: 12,
+    color: Colors.white,
+    fontWeight: '600',
+  },
+  openSwitcherBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.surfaceHighlight,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+    paddingVertical: 10,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  openSwitcherBtnText: {
+    fontSize: 12,
+    color: Colors.brand,
+    fontWeight: '600',
   },
 });
 

@@ -7,6 +7,7 @@ import {
   RecurringItem,
   MonthlyCashFlow,
   UserSession,
+  HouseholdInfo,
 } from '../types';
 import {
   INITIAL_MEMBERS,
@@ -19,8 +20,11 @@ import {
   signUpWithCredentials,
   createHouseholdForUser,
   joinHouseholdWithCode,
+  fetchUserHouseholds,
+  saveUserSession,
 } from '../lib/auth';
 import { supabase } from '../lib/supabase';
+import { buildTransactionFromRecurring, getRecurringScheduleInfo } from '../lib/recurringManager';
 
 interface AppContextType {
   user: UserSession | null;
@@ -33,6 +37,14 @@ interface AppContextType {
   isLoading: boolean;
   isRefreshing: boolean;
   hasDismissedOnboarding: boolean;
+
+  // Multi-household switcher state & methods
+  userHouseholds: HouseholdInfo[];
+  activeHouseholdId: string | null;
+  isHouseholdSwitcherOpen: boolean;
+  openHouseholdSwitcher: () => void;
+  closeHouseholdSwitcher: () => void;
+  switchHousehold: (householdId: string) => Promise<{ success: boolean; error?: string }>;
 
   // Auth & Household methods
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
@@ -47,6 +59,7 @@ interface AppContextType {
   updateTransaction: (id: string, updates: Partial<Transaction>) => Promise<{ success: boolean; error?: string }>;
   addRecurring: (item: RecurringItem) => Promise<void>;
   deleteRecurring: (id: string) => Promise<void>;
+  deductRecurringNow: (item: RecurringItem) => Promise<void>;
   addMember: (member: Member) => Promise<void>;
   removeMember: (id: string) => Promise<void>;
   updateHouseholdName: (name: string) => Promise<void>;
@@ -95,6 +108,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [hasDismissedOnboarding, setHasDismissedOnboarding] = useState<boolean>(false);
+  const [userHouseholds, setUserHouseholds] = useState<HouseholdInfo[]>([]);
+  const [isHouseholdSwitcherOpen, setIsHouseholdSwitcherOpen] = useState<boolean>(false);
+
+  const openHouseholdSwitcher = () => setIsHouseholdSwitcherOpen(true);
+  const closeHouseholdSwitcher = () => setIsHouseholdSwitcherOpen(false);
 
   // Load onboarding dismissal state
   useEffect(() => {
@@ -227,6 +245,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const session = await getUserSession();
         if (isMounted) {
           setUser(session);
+          if (session?.userId) {
+            const hhs = session.availableHouseholds && session.availableHouseholds.length > 0
+              ? session.availableHouseholds
+              : await fetchUserHouseholds(session.userId);
+            setUserHouseholds(hhs);
+          }
           if (session?.householdId) {
             await loadHouseholdData(session.householdId, session);
           } else if (session) {
@@ -257,6 +281,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const res = await signInWithCredentials(email, pass);
     if (res.success && res.session) {
       setUser(res.session);
+      if (res.session.availableHouseholds) {
+        setUserHouseholds(res.session.availableHouseholds);
+      } else if (res.session.userId) {
+        fetchUserHouseholds(res.session.userId).then(setUserHouseholds);
+      }
       if (res.session.householdId) {
         await loadHouseholdData(res.session.householdId, res.session);
       }
@@ -290,12 +319,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = async () => {
     await clearUserSession();
     setUser(null);
+    setUserHouseholds([]);
+    setIsHouseholdSwitcherOpen(false);
     setHouseholdName('My Household');
     setInviteCode(generateInviteCode());
     setTransactions([]);
     setMembers(INITIAL_MEMBERS);
     setRecurringItems([]);
     setMonthlyCashFlow(getTrailingMonths());
+  };
+
+  // Multi-Household Switcher: Switch active household
+  const switchHousehold = async (targetHouseholdId: string): Promise<{ success: boolean; error?: string }> => {
+    if (!user) return { success: false, error: 'User not signed in.' };
+    try {
+      setIsLoading(true);
+      const targetHh = userHouseholds.find((h) => h.id === targetHouseholdId);
+      let hhName = targetHh?.name;
+      let hhCode = targetHh?.inviteCode;
+
+      if (!hhName || !hhCode) {
+        const { data: dbHh } = await supabase
+          .from('households')
+          .select('id, name, invite_code')
+          .eq('id', targetHouseholdId)
+          .maybeSingle();
+
+        if (dbHh) {
+          hhName = dbHh.name;
+          hhCode = dbHh.invite_code;
+        }
+      }
+
+      const freshList = await fetchUserHouseholds(user.userId);
+      setUserHouseholds(freshList);
+
+      const updatedSession: UserSession = {
+        ...user,
+        householdId: targetHouseholdId,
+        householdName: hhName || householdName,
+        inviteCode: hhCode || inviteCode,
+        availableHouseholds: freshList,
+      };
+
+      await saveUserSession(updatedSession);
+      setUser(updatedSession);
+      if (hhName) setHouseholdName(hhName);
+      if (hhCode) setInviteCode(hhCode);
+
+      await loadHouseholdData(targetHouseholdId, updatedSession);
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Failed to switch household.' };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Household: Create
@@ -306,6 +384,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUser(res.session);
       if (res.session.householdName) setHouseholdName(res.session.householdName);
       if (res.session.inviteCode) setInviteCode(res.session.inviteCode);
+      if (res.session.availableHouseholds) {
+        setUserHouseholds(res.session.availableHouseholds);
+      } else {
+        const list = await fetchUserHouseholds(user.userId);
+        setUserHouseholds(list);
+      }
       await loadHouseholdData(res.session.householdId, res.session);
       return { success: true };
     }
@@ -320,6 +404,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUser(res.session);
       if (res.session.householdName) setHouseholdName(res.session.householdName);
       if (res.session.inviteCode) setInviteCode(res.session.inviteCode);
+      if (res.session.availableHouseholds) {
+        setUserHouseholds(res.session.availableHouseholds);
+      } else {
+        const list = await fetchUserHouseholds(user.userId);
+        setUserHouseholds(list);
+      }
       await loadHouseholdData(res.session.householdId, res.session);
       return { success: true };
     }
@@ -434,6 +524,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Deduct / Execute Recurring Item into Ledger
+  const deductRecurringNow = async (item: RecurringItem) => {
+    const tx = buildTransactionFromRecurring(item, members);
+    await addTransaction(tx);
+  };
+
+  // Auto-deduct recurring obligations on their due date
+  useEffect(() => {
+    if (isLoading || recurringItems.length === 0) return;
+    const today = new Date();
+    recurringItems.forEach((item) => {
+      const info = getRecurringScheduleInfo(item, transactions, today);
+      if (info.isDueToday && !info.isSettledThisMonth && item.autoPay) {
+        deductRecurringNow(item);
+      }
+    });
+  }, [isLoading, recurringItems, transactions]);
+
   // Delete Recurring Item
   const deleteRecurring = async (id: string) => {
     setRecurringItems((prev) => prev.filter((r) => r.id !== id));
@@ -515,6 +623,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
+      if (user?.userId) {
+        const hhs = await fetchUserHouseholds(user.userId);
+        setUserHouseholds(hhs);
+      }
       if (user?.householdId) {
         await loadHouseholdData(user.householdId, user);
       }
@@ -536,6 +648,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoading,
         isRefreshing,
         hasDismissedOnboarding,
+        userHouseholds,
+        activeHouseholdId: user?.householdId || null,
+        isHouseholdSwitcherOpen,
+        openHouseholdSwitcher,
+        closeHouseholdSwitcher,
+        switchHousehold,
         login,
         signup,
         logout,
@@ -546,6 +664,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateTransaction,
         addRecurring,
         deleteRecurring,
+        deductRecurringNow,
         addMember,
         removeMember,
         updateHouseholdName,

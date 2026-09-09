@@ -1,7 +1,8 @@
 // src/components/Header.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Plus } from 'lucide-react-native';
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { HouseholdDropdownMenu } from './HouseholdDropdownMenu';
 import { Colors } from '../constants/colors';
 import { HouseholdFundsLogo } from './HouseholdFundsLogo';
 import { useApp } from '../context/AppContext';
@@ -14,6 +15,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onOpenAddModal, title, subtitle }) => {
   const { user, householdName } = useApp();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const userInitials = user?.name
     ? user.name
@@ -25,19 +27,33 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAddModal, title, subtitle 
     : 'AS';
 
   return (
-    <View style={styles.container}>
+    <>
+      <View style={styles.container}>
       <View style={styles.leftRow}>
         <View style={styles.logoBadge}>
           <HouseholdFundsLogo size={16} color={Colors.white} />
         </View>
-        <View style={styles.titleWrapper}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title || householdName || 'Household Funds'}
-          </Text>
+        <TouchableOpacity
+          style={styles.titleWrapper}
+          onPress={() => setIsDropdownOpen(true)}
+          activeOpacity={0.7}
+          accessibilityLabel="Switch Household"
+          accessibilityRole="button"
+        >
+          <View style={styles.titleRow}>
+            <Text style={styles.title} numberOfLines={1}>
+              {title || householdName || 'Household Funds'}
+            </Text>
+            {isDropdownOpen ? (
+              <ChevronUp size={13} color={Colors.brand} style={styles.chevronIcon} />
+            ) : (
+              <ChevronDown size={13} color={Colors.textMuted} style={styles.chevronIcon} />
+            )}
+          </View>
           <Text style={styles.subtitle} numberOfLines={1}>
             {subtitle || 'Verified Ledger'}
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.rightRow}>
@@ -60,6 +76,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAddModal, title, subtitle 
         </View>
       </View>
     </View>
+
+      <HouseholdDropdownMenu
+        visible={isDropdownOpen}
+        onClose={() => setIsDropdownOpen(false)}
+      />
+    </>
   );
 };
 
@@ -92,6 +114,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  chevronIcon: {
+    marginTop: 1,
   },
   title: {
     fontSize: 14,

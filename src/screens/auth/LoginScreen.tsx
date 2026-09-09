@@ -27,10 +27,10 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   useEffect(() => {
     Animated.sequence([
-      Animated.timing(logoAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(logoAnim, { toValue: 1, duration: 500, useNativeDriver: Platform.OS !== 'web' }),
       Animated.parallel([
-        Animated.spring(cardAnim, { toValue: 0, tension: 60, friction: 12, useNativeDriver: true }),
-        Animated.timing(cardOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+        Animated.spring(cardAnim, { toValue: 0, tension: 60, friction: 12, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(cardOpacity, { toValue: 1, duration: 400, useNativeDriver: Platform.OS !== 'web' }),
       ]),
     ]).start();
   }, []);

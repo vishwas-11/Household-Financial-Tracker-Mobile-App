@@ -394,7 +394,7 @@ export const CashFlowAreaChart: React.FC<CashFlowAreaChartProps> = ({
           </Animated.View>
 
           {/* Staggered Spring Data Points */}
-          <Svg width={chartWidth} height={CHART_H} style={StyleSheet.absoluteFill} pointerEvents="none">
+          <Svg width={chartWidth} height={CHART_H} style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
             {incomePoints.map((pt, i) => {
               const anim = dotAnims[i] || new Animated.Value(1);
               return (

@@ -1,6 +1,6 @@
 ﻿// src/components/SkeletonLoader.tsx
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View, ViewStyle } from 'react-native';
+import { Animated, StyleSheet, View, ViewStyle, Platform } from 'react-native';
 import { Colors } from '../constants/colors';
 
 interface SkeletonLoaderProps {
@@ -21,8 +21,8 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: Platform.OS !== 'web' }),
       ])
     ).start();
   }, [shimmer]);

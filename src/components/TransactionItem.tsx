@@ -1,6 +1,6 @@
 ﻿// src/components/TransactionItem.tsx
 import React, { useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
 import { ShoppingCart, Zap, CreditCard, Coffee, Home, Briefcase, FileText, Trash2, Paperclip, PiggyBank, Bus, BookOpen, Activity, Music, Tag } from 'lucide-react-native';
 import { Transaction } from '../types';
 import { Colors } from '../constants/colors';
@@ -30,8 +30,8 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   useEffect(() => {
     const delay = index * 55;
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
-      Animated.spring(slideAnim, { toValue: 0, tension: 80, friction: 12, delay, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 80, friction: 12, delay, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
   }, []);
 
