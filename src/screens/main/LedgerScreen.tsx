@@ -273,80 +273,81 @@ export const LedgerScreen: React.FC = () => {
             isAllTime && overallReserve < 0 && styles.balanceBannerDeficit,
           ]}
         >
-          <View style={{ flex: 1 }}>
-            <View style={styles.balanceHeaderRow}>
-              <Text style={styles.balanceLabel}>
-                {isAllTime
-                  ? 'CUMULATIVE AVAILABLE FUNDS (ALL TIME)'
-                  : `NET CASH FLOW • ${selectedMonthLabel.toUpperCase()}`}
-              </Text>
-              {!isAllTime ? (
-                monthNet < 0 ? (
-                  <View style={styles.deficitPill}>
-                    <AlertTriangle size={10} color={Colors.expense} />
-                    <Text style={styles.deficitPillText}>Monthly Deficit</Text>
-                  </View>
-                ) : monthNet > 0 ? (
-                  <View style={styles.surplusPill}>
-                    <TrendingUp size={10} color={Colors.income} />
-                    <Text style={styles.surplusPillText}>Monthly Surplus</Text>
-                  </View>
-                ) : null
-              ) : overallReserve < 0 ? (
+          {/* Header Row: Label & Surplus/Deficit Pill */}
+          <View style={styles.balanceHeaderRow}>
+            <Text style={styles.balanceLabel} numberOfLines={1}>
+              {isAllTime
+                ? 'CUMULATIVE AVAILABLE FUNDS (ALL TIME)'
+                : `NET CASH FLOW • ${selectedMonthLabel.toUpperCase()}`}
+            </Text>
+            {!isAllTime ? (
+              monthNet < 0 ? (
                 <View style={styles.deficitPill}>
                   <AlertTriangle size={10} color={Colors.expense} />
-                  <Text style={styles.deficitPillText}>Reserve Deficit</Text>
+                  <Text style={styles.deficitPillText}>Monthly Deficit</Text>
                 </View>
-              ) : null}
-            </View>
-
-            <Text
-              style={[
-                styles.balanceValue,
-                !isAllTime
-                  ? monthNet < 0
-                    ? { color: Colors.expense }
-                    : monthNet > 0
-                    ? { color: Colors.income }
-                    : { color: Colors.text }
-                  : overallReserve < 0
-                  ? { color: Colors.expense }
-                  : { color: Colors.text },
-              ]}
-            >
-              {!isAllTime
-                ? `${monthNet > 0 ? '+' : ''}${formatCurrency(monthNet)}`
-                : formatCurrency(overallReserve)}
-            </Text>
-
-            {/* Inflow / Outflow summary */}
-            {!isAllTime ? (
-              <View style={styles.inflowOutflowRow}>
-                <Text style={styles.inflowText}>
-                  +{formatCurrency(monthIncome, { showDecimals: false })} Inflow
-                </Text>
-                <Text style={styles.summaryDot}>•</Text>
-                <Text style={styles.outflowText}>
-                  -{formatCurrency(monthExpense, { showDecimals: false })} Outflow
-                </Text>
-                <Text style={styles.summaryDot}>•</Text>
-                <Text style={styles.balanceSubtext}>
-                  {filteredTransactions.length} records
-                </Text>
+              ) : monthNet > 0 ? (
+                <View style={styles.surplusPill}>
+                  <TrendingUp size={10} color={Colors.income} />
+                  <Text style={styles.surplusPillText}>Monthly Surplus</Text>
+                </View>
+              ) : null
+            ) : overallReserve < 0 ? (
+              <View style={styles.deficitPill}>
+                <AlertTriangle size={10} color={Colors.expense} />
+                <Text style={styles.deficitPillText}>Reserve Deficit</Text>
               </View>
-            ) : (
-              <Text style={styles.balanceSubtext}>
-                {filteredTransactions.length} total records across all months
-              </Text>
-            )}
-
-            {!isAllTime && (
-              <Text style={styles.reserveSubtext}>
-                Overall Household Reserve: {formatCurrency(overallReserve)}
-              </Text>
-            )}
+            ) : null}
           </View>
 
+          {/* Main Net Amount */}
+          <Text
+            style={[
+              styles.balanceValue,
+              !isAllTime
+                ? monthNet < 0
+                  ? { color: Colors.expense }
+                  : monthNet > 0
+                  ? { color: Colors.income }
+                  : { color: Colors.text }
+                : overallReserve < 0
+                ? { color: Colors.expense }
+                : { color: Colors.text },
+            ]}
+          >
+            {!isAllTime
+              ? `${monthNet > 0 ? '+' : ''}${formatCurrency(monthNet)}`
+              : formatCurrency(overallReserve)}
+          </Text>
+
+          {/* Inflow / Outflow summary */}
+          {!isAllTime ? (
+            <View style={styles.inflowOutflowRow}>
+              <Text style={styles.inflowText}>
+                +{formatCurrency(monthIncome, { showDecimals: false })} Inflow
+              </Text>
+              <Text style={styles.summaryDot}>•</Text>
+              <Text style={styles.outflowText}>
+                -{formatCurrency(monthExpense, { showDecimals: false })} Outflow
+              </Text>
+              <Text style={styles.summaryDot}>•</Text>
+              <Text style={styles.balanceSubtext}>
+                {filteredTransactions.length} records
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.balanceSubtext}>
+              {filteredTransactions.length} total records across all months
+            </Text>
+          )}
+
+          {!isAllTime && (
+            <Text style={styles.reserveSubtext}>
+              Overall Household Reserve: {formatCurrency(overallReserve)}
+            </Text>
+          )}
+
+          {/* Action Button - Placed at bottom so it never overlaps metrics on any phone */}
           <TouchableOpacity
             style={[
               styles.newEntryBtn,
@@ -357,7 +358,7 @@ export const LedgerScreen: React.FC = () => {
           >
             <Plus size={14} color={Colors.white} />
             <Text style={styles.newEntryBtnText}>
-              {!hasIncome ? 'Add Income' : 'Add Entry'}
+              {!hasIncome ? 'Add First Income Entry' : 'Add Entry'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -773,11 +774,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: 'column',
   },
   balanceBannerDeficit: {
     borderColor: 'rgba(239, 68, 68, 0.35)',
@@ -786,14 +785,16 @@ const styles = StyleSheet.create({
   balanceHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   balanceLabel: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '700',
     color: Colors.textSecondary,
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
+    flexShrink: 1,
+    marginRight: 8,
   },
   deficitPill: {
     flexDirection: 'row',
@@ -824,14 +825,16 @@ const styles = StyleSheet.create({
     color: Colors.income,
   },
   balanceValue: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     color: Colors.text,
     letterSpacing: -0.5,
+    marginVertical: 2,
   },
   inflowOutflowRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 6,
     marginTop: 4,
   },
@@ -854,21 +857,24 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   reserveSubtext: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: Colors.textSubdued,
-    marginTop: 3,
+    marginTop: 4,
   },
   newEntryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     backgroundColor: Colors.brand,
-    paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    borderRadius: 9,
+    marginTop: 14,
+    width: '100%',
   },
   newEntryBtnText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
     color: Colors.white,
   },
