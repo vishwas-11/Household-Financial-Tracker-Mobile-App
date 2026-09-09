@@ -28,6 +28,7 @@ import {
   ArrowRightLeft,
   Plus,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { Header } from '../../components/Header';
@@ -51,6 +52,7 @@ export const SettingsScreen: React.FC = () => {
     switchHousehold,
     joinHousehold,
     openHouseholdSwitcher,
+    resetTutorial,
   } = useApp();
 
   const [joinCodeInput, setJoinCodeInput] = useState('');
@@ -283,6 +285,16 @@ export const SettingsScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
+          {/* Replay Onboarding Tutorial Tour Button */}
+          <TouchableOpacity
+            onPress={resetTutorial}
+            style={styles.tutorialBtn}
+            activeOpacity={0.7}
+          >
+            <Sparkles size={14} color={Colors.brand} />
+            <Text style={styles.tutorialBtnText}>Replay App Onboarding Tutorial</Text>
+          </TouchableOpacity>
+
           {/* Re-show Onboarding Guide Button */}
           <TouchableOpacity
             onPress={handleResetGuide}
@@ -509,6 +521,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: Colors.textSecondary,
+  },
+  tutorialBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(94, 106, 210, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(94, 106, 210, 0.3)',
+    paddingVertical: 11,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  tutorialBtnText: {
+    fontSize: 12,
+    color: Colors.brand,
+    fontWeight: '700',
   },
   guideBtn: {
     flexDirection: 'row',

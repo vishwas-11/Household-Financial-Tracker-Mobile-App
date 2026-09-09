@@ -1,5 +1,5 @@
 ﻿// src/screens/main/DashboardScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, Dimensions, NativeSyntheticEvent, NativeScrollEvent,
@@ -23,13 +23,34 @@ import { DashboardSkeleton } from '../../components/SkeletonLoader';
 import { useApp } from '../../context/AppContext';
 
 export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const { transactions, recurringItems, deductRecurringNow, monthlyCashFlow, householdName, isLoading, isRefreshing, refreshData } = useApp();
+  const {
+    transactions,
+    recurringItems,
+    deductRecurringNow,
+    monthlyCashFlow,
+    householdName,
+    isLoading,
+    isRefreshing,
+    refreshData,
+    hasCompletedTutorial,
+    openTutorial,
+  } = useApp();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [modalInitialType, setModalInitialType] = useState<'income' | 'expenditure'>('income');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [donutY, setDonutY] = useState(0);
   const [isDonutVisible, setIsDonutVisible] = useState(false);
+
+  // Auto-launch interactive onboarding tutorial for first-time users
+  useEffect(() => {
+    if (!isLoading && !hasCompletedTutorial) {
+      const timer = setTimeout(() => {
+        openTutorial();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, hasCompletedTutorial, openTutorial]);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (isDonutVisible) return;

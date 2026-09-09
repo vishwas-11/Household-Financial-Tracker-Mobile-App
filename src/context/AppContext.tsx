@@ -68,6 +68,14 @@ interface AppContextType {
   refreshData: () => Promise<void>;
   dismissOnboarding: () => void;
   resetOnboarding: () => void;
+
+  // Interactive Onboarding Tour
+  hasCompletedTutorial: boolean;
+  isTutorialVisible: boolean;
+  openTutorial: () => void;
+  closeTutorial: () => void;
+  completeTutorial: () => Promise<void>;
+  resetTutorial: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -96,6 +104,7 @@ function computeDynamicCashFlow(txList: Transaction[]): MonthlyCashFlow[] {
 }
 
 const ONBOARDING_DISMISSED_KEY = '@hft_onboarding_dismissed';
+const TUTORIAL_COMPLETED_KEY = '@hft_tutorial_completed';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserSession | null>(null);
@@ -108,6 +117,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [hasDismissedOnboarding, setHasDismissedOnboarding] = useState<boolean>(false);
+  const [hasCompletedTutorial, setHasCompletedTutorial] = useState<boolean>(false);
+  const [isTutorialVisible, setIsTutorialVisible] = useState<boolean>(false);
   const [userHouseholds, setUserHouseholds] = useState<HouseholdInfo[]>([]);
   const [isHouseholdSwitcherOpen, setIsHouseholdSwitcherOpen] = useState<boolean>(false);
 
@@ -119,6 +130,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     AsyncStorage.getItem(ONBOARDING_DISMISSED_KEY).then((val) => {
       if (val === 'true') setHasDismissedOnboarding(true);
     });
+    AsyncStorage.getItem(TUTORIAL_COMPLETED_KEY).then((val) => {
+      if (val === 'true') setHasCompletedTutorial(true);
+    });
   }, []);
 
   const dismissOnboarding = async () => {
@@ -129,6 +143,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const resetOnboarding = async () => {
     setHasDismissedOnboarding(false);
     await AsyncStorage.removeItem(ONBOARDING_DISMISSED_KEY);
+  };
+
+  const openTutorial = () => setIsTutorialVisible(true);
+  const closeTutorial = () => setIsTutorialVisible(false);
+
+  const completeTutorial = async () => {
+    setHasCompletedTutorial(true);
+    setIsTutorialVisible(false);
+    await AsyncStorage.setItem(TUTORIAL_COMPLETED_KEY, 'true');
+  };
+
+  const resetTutorial = async () => {
+    setHasCompletedTutorial(false);
+    await AsyncStorage.removeItem(TUTORIAL_COMPLETED_KEY);
+    setIsTutorialVisible(true);
   };
 
   // Load app data for the active household from Supabase
@@ -673,6 +702,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         refreshData,
         dismissOnboarding,
         resetOnboarding,
+        hasCompletedTutorial,
+        isTutorialVisible,
+        openTutorial,
+        closeTutorial,
+        completeTutorial,
+        resetTutorial,
       }}
     >
       {children}

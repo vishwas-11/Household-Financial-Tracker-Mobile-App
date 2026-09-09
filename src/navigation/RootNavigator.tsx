@@ -8,9 +8,18 @@ import { useApp } from '../context/AppContext';
 import { Colors } from '../constants/colors';
 import { HouseholdFundsLogo } from '../components/HouseholdFundsLogo';
 import { HouseholdSwitcherModal } from '../components/HouseholdSwitcherModal';
+import { Onboarding } from '../components/ui/Onboarding';
+import { ONBOARDING_STEPS } from '../constants/onboardingSteps';
 
 export const RootNavigator: React.FC = () => {
-  const { user, isLoading, isHouseholdSwitcherOpen, closeHouseholdSwitcher } = useApp();
+  const {
+    user,
+    isLoading,
+    isHouseholdSwitcherOpen,
+    closeHouseholdSwitcher,
+    isTutorialVisible,
+    completeTutorial,
+  } = useApp();
 
   if (isLoading) {
     return (
@@ -39,6 +48,17 @@ export const RootNavigator: React.FC = () => {
         <HouseholdSwitcherModal
           visible={isHouseholdSwitcherOpen}
           onClose={closeHouseholdSwitcher}
+        />
+      )}
+
+      {user && (
+        <Onboarding
+          visible={isTutorialVisible}
+          steps={ONBOARDING_STEPS}
+          onComplete={completeTutorial}
+          onSkip={completeTutorial}
+          primaryButtonText="Get Started"
+          skipButtonText="Skip Tour"
         />
       )}
     </>
