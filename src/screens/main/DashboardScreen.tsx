@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, Animated,
+  RefreshControl, Animated, Dimensions, NativeSyntheticEvent, NativeScrollEvent, LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -29,6 +29,18 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [modalInitialType, setModalInitialType] = useState<'income' | 'expenditure'>('income');
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [donutY, setDonutY] = useState(0);
+  const [isDonutVisible, setIsDonutVisible] = useState(false);
+  const windowHeight = Dimensions.get('window').height;
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (isDonutVisible) return;
+    const { contentOffset, layoutMeasurement } = event.nativeEvent;
+    const scrollBottom = contentOffset.y + layoutMeasurement.height;
+    if (donutY > 0 && scrollBottom >= donutY + 50) {
+      setIsDonutVisible(true);
+    }
+  };
   const [receiptUrlToView, setReceiptUrlToView] = useState<string | null>(null);
 
   const hasIncome = transactions.some((t) => t.type === 'income');
@@ -68,7 +80,9 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refreshData} tintColor={Colors.brand} />}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={async () => { setIsDonutVisible(false); await refreshData(); }} tintColor={Colors.brand} />}
       >
         {/* ── Hero Balance Card ─────────────────────────── */}
         <View style={styles.section}>

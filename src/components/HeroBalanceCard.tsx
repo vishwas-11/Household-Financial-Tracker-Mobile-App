@@ -27,8 +27,8 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(scaleAnim, { toValue: 1, tension: 60, friction: 10, useNativeDriver: true }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.spring(scaleAnim, { toValue: 1, tension: 40, friction: 9, useNativeDriver: true }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
     ]).start();
   }, []);
 
@@ -67,7 +67,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
           value={balance}
           prefix={balance < 0 ? '-₹' : '₹'}
           style={styles.balanceAmount}
-          duration={1400}
+          duration={2600}
         />
 
         {/* Divider */}
@@ -85,7 +85,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                 value={totalIncome}
                 prefix="₹"
                 style={styles.pillAmount}
-                duration={1200}
+                duration={2400}
               />
             </View>
           </View>
@@ -102,7 +102,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                 value={totalExpense}
                 prefix="₹"
                 style={[styles.pillAmount, styles.pillAmountExpense]}
-                duration={1200}
+                duration={2400}
               />
             </View>
           </View>
