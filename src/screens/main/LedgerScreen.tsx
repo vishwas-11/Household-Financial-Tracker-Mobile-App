@@ -204,7 +204,8 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
       >
         {/* Month Selector Bar */}
         <View style={styles.monthSelectorBar}>
-          <View style={styles.monthNavControls}>
+          {/* Top Row: Month Navigation */}
+          <View style={styles.monthNavRow}>
             <TouchableOpacity
               onPress={handlePrevMonth}
               style={styles.monthNavArrow}
@@ -223,8 +224,8 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
               activeOpacity={0.7}
             >
               <Calendar size={13} color={Colors.brand} />
-              <Text style={styles.monthTitleText}>
-                {isAllTime ? 'All Time' : selectedMonthLabel}
+              <Text style={styles.monthTitleText} numberOfLines={1}>
+                {isAllTime ? 'All Time (Tap to Pick Month)' : selectedMonthLabel}
               </Text>
               <ChevronDown size={12} color={Colors.textMuted} />
             </TouchableOpacity>
@@ -239,7 +240,7 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
             </TouchableOpacity>
           </View>
 
-          {/* Quick Scope Switcher */}
+          {/* Bottom Row: Quick Scope Switcher */}
           <View style={styles.scopeSwitcher}>
             <TouchableOpacity
               onPress={handleJumpToCurrentMonth}
@@ -290,7 +291,7 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
             <Text style={styles.balanceLabel} numberOfLines={1}>
               {isAllTime
                 ? 'CUMULATIVE AVAILABLE FUNDS (ALL TIME)'
-                : `NET CASH FLOW â€¢ ${selectedMonthLabel.toUpperCase()}`}
+                : `NET CASH FLOW (${selectedMonthLabel.toUpperCase()})`}
             </Text>
             {!isAllTime ? (
               monthNet < 0 ? (
@@ -338,11 +339,11 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
               <Text style={styles.inflowText}>
                 +{formatCurrency(monthIncome, { showDecimals: false })} Inflow
               </Text>
-              <Text style={styles.summaryDot}>â€¢</Text>
+              <View style={styles.summaryDot} />
               <Text style={styles.outflowText}>
                 -{formatCurrency(monthExpense, { showDecimals: false })} Outflow
               </Text>
-              <Text style={styles.summaryDot}>â€¢</Text>
+              <View style={styles.summaryDot} />
               <Text style={styles.balanceSubtext}>
                 {filteredTransactions.length} records
               </Text>
@@ -740,33 +741,35 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
-    borderRadius: 12,
+    borderRadius: 14,
     padding: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: 8,
   },
-  monthNavControls: {
+  monthNavRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 8,
   },
   monthNavArrow: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
+    width: 34,
+    height: 34,
+    borderRadius: 8,
     backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   monthTitlePill: {
+    flex: 1,
+    height: 34,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    justifyContent: 'center',
+    gap: 7,
+    paddingHorizontal: 12,
     backgroundColor: Colors.surfaceElevated,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -778,20 +781,24 @@ const styles = StyleSheet.create({
   scopeSwitcher: {
     flexDirection: 'row',
     backgroundColor: Colors.surfaceElevated,
-    borderRadius: 6,
-    padding: 2,
-    gap: 2,
+    borderRadius: 8,
+    padding: 3,
+    gap: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   scopeBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 5,
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   scopeBtnActive: {
     backgroundColor: Colors.surfaceHighlight,
   },
   scopeBtnText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '500',
     color: Colors.textMuted,
   },
@@ -878,8 +885,11 @@ const styles = StyleSheet.create({
     color: Colors.expense,
   },
   summaryDot: {
-    fontSize: 10,
-    color: Colors.textMuted,
+    width: 3.5,
+    height: 3.5,
+    borderRadius: 2,
+    backgroundColor: Colors.textMuted,
+    marginHorizontal: 3,
   },
   balanceSubtext: {
     fontSize: 11,
