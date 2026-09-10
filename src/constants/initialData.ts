@@ -34,19 +34,48 @@ export const getTrailingMonths = (): MonthlyCashFlow[] => {
 
 export const MONTHLY_CASH_FLOW_DATA: MonthlyCashFlow[] = getTrailingMonths();
 
-export const TRANSACTION_CATEGORIES = [
+export const EXPENSE_CATEGORIES: string[] = [
+  'Housing',
   'Groceries',
   'Utilities',
-  'Salary',
   'Bills',
   'Dining',
-  'Housing',
-  'Freelance',
+  'Transport',
   'Health',
   'Shopping',
-  'Savings',
   'Entertainment',
-  'Transport',
   'Education',
+  'Other',
+];
+
+export const INCOME_CATEGORIES: string[] = [
+  'Salary',
   'Investment',
+  'Business',
+  'Freelance',
+  'Rental',
+  'Bonus',
+  'Savings',
+  'Other',
+];
+
+export const TRANSACTION_CATEGORIES: string[] = [
+  'Housing',
+  'Groceries',
+  'Utilities',
+  'Bills',
+  'Dining',
+  'Transport',
+  'Health',
+  'Shopping',
+  'Entertainment',
+  'Education',
+  'Salary',
+  'Investment',
+  'Business',
+  'Freelance',
+  'Rental',
+  'Bonus',
+  'Savings',
+  'Other',
 ];

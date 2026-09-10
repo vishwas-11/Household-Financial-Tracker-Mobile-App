@@ -1,12 +1,11 @@
 // src/components/CategoryDonutChart.tsx
 // Animated segmented radial donut chart inspired by BNA UI with circular sweep animation
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Colors } from '../constants/colors';
 import { Transaction, RecurringItem } from '../types';
 import { AnimatedCounter } from './AnimatedCounter';
-import { formatCurrency } from '../lib/currency';
 import { getRecurringScheduleInfo } from '../lib/recurringManager';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -17,44 +16,63 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
 
-const CHART_COLORS = [
-  Colors.chart[0], // Brand / Indigo
-  Colors.chart[1], // Emerald
-  Colors.chart[2], // Rose
-  Colors.chart[3], // Amber
-  Colors.chart[4], // Violet
-  Colors.chart[5], // Cyan
+// Broad, vibrant, high-contrast palette so neighboring slices are always distinct
+const EXTENDED_PALETTE = [
+  '#5E6AD2', // Brand Indigo
+  '#10B981', // Emerald
+  '#F43F5E', // Rose
+  '#F59E0B', // Amber
+  '#06B6D4', // Cyan
+  '#8B5CF6', // Purple
+  '#EC4899', // Pink
+  '#14B8A6', // Teal
+  '#F97316', // Orange
+  '#3B82F6', // Blue
+  '#84CC16', // Lime
+  '#D946EF', // Fuchsia
+  '#6366F1', // Violet
+  '#EAB308', // Yellow
+  '#A855F7', // Deep Purple
+  '#64748B', // Slate
 ];
+
+// Helper to normalize category name: trim whitespace and auto-capitalize
+export const normalizeCategory = (cat?: string): string => {
+  if (!cat) return 'Other';
+  const trimmed = cat.trim();
+  if (!trimmed) return 'Other';
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+};
 
 interface CategoryDonutChartProps {
   transactions: Transaction[];
   recurringItems?: RecurringItem[];
-  duration?: number;
   isVisible?: boolean;
+  duration?: number;
 }
 
 export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
-  transactions = [],
+  transactions,
   recurringItems = [],
-  duration = 2400,
   isVisible = true,
+  duration = 1000,
 }) => {
   const [sweepProgress, setSweepProgress] = useState(0);
   const animFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  // Dynamically compute category totals combining realized expenses and active recurring commitments
+  // Aggregate expenditures from both realized transactions & active scheduled recurring commitments
   const { catMap, total, scheduledCount } = useMemo(() => {
     const map: Record<string, number> = {};
     let sum = 0;
     let scheduled = 0;
 
-    // 1. Realized transaction expenses
+    // 1. Realized transactions
     transactions
       .filter((t) => t.type === 'expenditure')
       .forEach((t) => {
         sum += t.amount;
-        const cat = t.category || 'Other';
+        const cat = normalizeCategory(t.category);
         map[cat] = (map[cat] || 0) + t.amount;
       });
 
@@ -66,7 +84,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
         if (!info.isSettledThisMonth) {
           sum += r.amount;
           scheduled++;
-          const cat = r.category || 'Other';
+          const cat = normalizeCategory(r.category);
           map[cat] = (map[cat] || 0) + r.amount;
         }
       });
@@ -74,10 +92,9 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
     return { catMap: map, total: sum, scheduledCount: scheduled };
   }, [transactions, recurringItems]);
 
+  // Keep all categories sorted descending by amount (no truncation)
   const sorted = useMemo(() => {
-    return Object.entries(catMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6);
+    return Object.entries(catMap).sort((a, b) => b[1] - a[1]);
   }, [catMap]);
 
   // Easing function: easeOutCubic
@@ -119,8 +136,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
     let currentAngle = -90; // Start at 12 o'clock
     const hasMultiple = sorted.length > 1;
-    // 3.5-degree gap between slices if multiple categories
-    const gapDeg = hasMultiple ? 3.5 : 0;
+    const gapDeg = sorted.length > 8 ? 2 : hasMultiple ? 3.5 : 0;
     const gapLength = (gapDeg / 360) * CIRCUMFERENCE;
 
     return sorted.map(([name, amount], index) => {
@@ -131,12 +147,14 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
       const rawArcLength = ratio * CIRCUMFERENCE;
       const arcLength = Math.max(rawArcLength - gapLength, 1);
+      const rawPct = ratio * 100;
+      const displayPct = rawPct > 0 && rawPct < 1 ? '<1%' : `${Math.round(rawPct)}%`;
 
       return {
         name,
         amount,
-        pct: Math.round(ratio * 100),
-        color: CHART_COLORS[index % CHART_COLORS.length],
+        pct: displayPct,
+        color: EXTENDED_PALETTE[index % EXTENDED_PALETTE.length],
         startAngle,
         arcLength,
       };
@@ -193,7 +211,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
                 const currentLength = segment.arcLength * sweepProgress;
                 return (
                   <Circle
-                    key={`seg-${index}`}
+                    key={`seg-${segment.name}-${index}`}
                     cx={CX}
                     cy={CY}
                     r={RADIUS}
@@ -225,22 +243,29 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
           </View>
         </View>
 
-        {/* Legend */}
-        <View style={styles.legend}>
-          {segments.slice(0, 5).map((segment, index) => (
-            <View key={`legend-${index}`} style={styles.legendItem}>
-              <View
-                style={[
-                  styles.legendColor,
-                  { backgroundColor: segment.color },
-                ]}
-              />
-              <Text style={styles.legendName} numberOfLines={1}>
-                {segment.name}
-              </Text>
-              <Text style={styles.legendPct}>{segment.pct}%</Text>
-            </View>
-          ))}
+        {/* Scrollable Legend: displays every category without truncation */}
+        <View style={styles.legendContainer}>
+          <ScrollView
+            style={{ maxHeight: SIZE }}
+            showsVerticalScrollIndicator={segments.length > 5}
+            nestedScrollEnabled={true}
+            contentContainerStyle={styles.legendScrollContent}
+          >
+            {segments.map((segment, index) => (
+              <View key={`legend-${segment.name}-${index}`} style={styles.legendItem}>
+                <View
+                  style={[
+                    styles.legendColor,
+                    { backgroundColor: segment.color },
+                  ]}
+                />
+                <Text style={styles.legendName} numberOfLines={1}>
+                  {segment.name}
+                </Text>
+                <Text style={styles.legendPct}>{segment.pct}</Text>
+              </View>
+            ))}
+          </ScrollView>
         </View>
       </View>
     </View>
@@ -301,7 +326,7 @@ const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 14,
   },
   centerOverlay: {
     ...StyleSheet.absoluteFill,
@@ -323,9 +348,14 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textAlign: 'center',
   },
-  legend: {
+  legendContainer: {
     flex: 1,
-    gap: 9,
+    height: SIZE,
+    justifyContent: 'center',
+  },
+  legendScrollContent: {
+    paddingVertical: 2,
+    gap: 8,
   },
   legendItem: {
     flexDirection: 'row',

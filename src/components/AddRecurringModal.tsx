@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Check, Clock, Calendar, Sparkles } from 'lucide-react-native';
 import { RecurringItem, TransactionType } from '../types';
 import { Colors } from '../constants/colors';
-import { TRANSACTION_CATEGORIES } from '../constants/initialData';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, TRANSACTION_CATEGORIES } from '../constants/initialData';
 import { useApp } from '../context/AppContext';
 import { MiniDatePicker, parseDateString } from './MiniDatePicker';
 import { getTodayDateString } from '../lib/transactionCalculations';
@@ -43,7 +43,7 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
   const [amount, setAmount] = useState('');
   const [firstDate, setFirstDate] = useState(todayStr);
   const [frequency, setFrequency] = useState<'Monthly' | 'Bi-weekly' | 'Weekly' | 'Annual'>('Monthly');
-  const [category, setCategory] = useState(TRANSACTION_CATEGORIES[0]);
+  const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
   const [assignedMemberId, setAssignedMemberId] = useState(members[0]?.id || 'A');
 
   // Sync form state when modal opens or initialItem changes
@@ -54,7 +54,7 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
       setType(initialItem.type || 'expenditure');
       setFrequency((initialItem.frequency as any) || 'Monthly');
       setFirstDate(initialItem.nextDueDate || todayStr);
-      setCategory(initialItem.category || TRANSACTION_CATEGORIES[0]);
+      setCategory(initialItem.category ? initialItem.category.trim() : (initialItem.type === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0]));
       setAssignedMemberId(initialItem.memberId || members[0]?.id || 'A');
     } else if (visible && !initialItem) {
       setTitle('');
@@ -62,7 +62,7 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
       setType('expenditure');
       setFrequency('Monthly');
       setFirstDate(todayStr);
-      setCategory(TRANSACTION_CATEGORIES[0]);
+      setCategory(EXPENSE_CATEGORIES[0]);
       setAssignedMemberId(members[0]?.id || 'A');
     }
   }, [visible, initialItem, todayStr, members]);
@@ -124,13 +124,16 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
       return;
     }
 
+    const trimmedCat = category.trim();
+    const cleanCategory = trimmedCat ? trimmedCat.charAt(0).toUpperCase() + trimmedCat.slice(1) : 'Other';
+
     if (initialItem) {
       await updateRecurring(initialItem.id, {
         title: title.trim(),
         amount: parsedAmount,
         frequency,
         nextDueDate: firstDate,
-        category,
+        category: cleanCategory,
         type,
         memberId: assignedMemberId,
       });
@@ -141,7 +144,7 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
         amount: parsedAmount,
         frequency,
         nextDueDate: firstDate,
-        category,
+        category: cleanCategory,
         type,
         autoPay: true,
         memberId: assignedMemberId,
@@ -346,20 +349,20 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
                   showsHorizontalScrollIndicator={false}
                   style={styles.chipScroll}
                 >
-                  {TRANSACTION_CATEGORIES.map((cat) => (
+                  {(type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((cat) => (
                     <TouchableOpacity
                       key={cat}
                       onPress={() => setCategory(cat)}
                       style={[
                         styles.chip,
-                        category === cat && styles.chipActive,
+                        category.toLowerCase() === cat.toLowerCase() && styles.chipActive,
                       ]}
                       activeOpacity={0.7}
                     >
                       <Text
                         style={[
                           styles.chipText,
-                          category === cat && styles.chipTextActive,
+                          category.toLowerCase() === cat.toLowerCase() && styles.chipTextActive,
                         ]}
                       >
                         {cat}

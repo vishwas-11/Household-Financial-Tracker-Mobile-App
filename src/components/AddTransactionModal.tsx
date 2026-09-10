@@ -21,7 +21,7 @@ import { X, Clock, Camera, Image as ImageIcon, Trash2, Check, TrendingUp, AlertT
 import { Transaction, TransactionType } from '../types';
 import { isTransactionUpcoming } from '../lib/transactionCalculations';
 import { Colors } from '../constants/colors';
-import { TRANSACTION_CATEGORIES } from '../constants/initialData';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, TRANSACTION_CATEGORIES } from '../constants/initialData';
 import { useApp } from '../context/AppContext';
 import { uploadReceiptImage } from '../lib/storage';
 import { MiniDatePicker } from './MiniDatePicker';
@@ -52,7 +52,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   );
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [category, setCategory] = useState(defaultToIncome ? 'Salary' : TRANSACTION_CATEGORIES[0]);
+  const [category, setCategory] = useState(defaultToIncome ? 'Salary' : EXPENSE_CATEGORIES[0]);
   const [memberId, setMemberId] = useState(members[0]?.id || 'A');
   const [date, setDate] = useState(() => {
     const today = new Date();
@@ -387,7 +387,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                   contentContainerStyle={styles.categoryScroll}
                 >
                   {(type === 'income'
-                    ? ['Salary', 'Investment', 'Business', 'Bonus', 'Rental', 'Other']
+                    ? INCOME_CATEGORIES
                     : TRANSACTION_CATEGORIES
                   ).map((cat) => {
                     const isSelected = category === cat;

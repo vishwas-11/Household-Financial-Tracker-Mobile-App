@@ -24,7 +24,7 @@ import { Transaction } from '../types';
 import { isTransactionUpcoming } from '../lib/transactionCalculations';
 import { Colors } from '../constants/colors';
 import { formatCurrency } from '../lib/currency';
-import { TRANSACTION_CATEGORIES } from '../constants/initialData';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, TRANSACTION_CATEGORIES } from '../constants/initialData';
 import { useApp } from '../context/AppContext';
 
 interface TransactionDetailSheetProps {
@@ -299,7 +299,7 @@ export const TransactionDetailSheet: React.FC<TransactionDetailSheetProps> = ({
               <TouchableOpacity onPress={() => setIsCategoryPickerVisible(false)} style={styles.pickerCloseBtn} activeOpacity={0.7}><X size={18} color={Colors.textSecondary} /></TouchableOpacity>
             </View>
             <FlatList
-              data={TRANSACTION_CATEGORIES} keyExtractor={(item) => item}
+              data={transaction?.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES} keyExtractor={(item) => item}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.pickerListContent}
               ItemSeparatorComponent={() => <View style={styles.pickerSeparator} />}
