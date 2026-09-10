@@ -12,6 +12,7 @@ import { Colors } from '../../constants/colors';
 import { Header } from '../../components/Header';
 import { HeroBalanceCard } from '../../components/HeroBalanceCard';
 import { calculateBalanceMetrics } from '../../lib/transactionCalculations';
+import { getRecurringScheduleInfo } from '../../lib/recurringManager';
 import { RecurringCommitmentsCard } from '../../components/RecurringCommitmentsCard';
 import { CashFlowAreaChart } from '../../components/CashFlowAreaChart';
 import { CategoryDonutChart } from '../../components/CategoryDonutChart';
@@ -69,6 +70,37 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     setModalInitialType(preselectedType || (hasIncome ? 'expenditure' : 'income'));
     setIsAddModalOpen(true);
   };
+
+  // Closest 2-3 recurring payments for hero card preview
+  const topRecurringPreviews = useMemo(() => {
+    if (!recurringItems || recurringItems.length === 0) return [];
+
+    const sorted = [...recurringItems].sort((a, b) => {
+      const infoA = getRecurringScheduleInfo(a, transactions);
+      const infoB = getRecurringScheduleInfo(b, transactions);
+
+      if (infoA.isSettledThisMonth !== infoB.isSettledThisMonth) {
+        return infoA.isSettledThisMonth ? 1 : -1;
+      }
+      if (infoA.isDueToday !== infoB.isDueToday) {
+        return infoA.isDueToday ? -1 : 1;
+      }
+      return infoA.daysRemaining - infoB.daysRemaining;
+    });
+
+    return sorted.slice(0, 3).map((item) => {
+      const info = getRecurringScheduleInfo(item, transactions);
+      return {
+        id: item.id,
+        title: item.title,
+        amount: item.amount,
+        dueText: info.isDueToday ? 'Due Today' : info.statusLabel,
+        isDueToday: info.isDueToday,
+        category: item.category,
+        frequency: item.frequency,
+      };
+    });
+  }, [recurringItems, transactions]);
 
   const balanceMetrics = calculateBalanceMetrics(transactions, recurringItems);
   const {
@@ -135,6 +167,8 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             upcomingExpense={upcomingExpense}
             upcomingCount={upcomingCount}
             earliestUpcomingDate={earliestUpcomingDate}
+            upcomingRecurringItems={topRecurringPreviews}
+            onNavigateToRecurring={() => navigation?.navigate?.('Recurring')}
           />
         </View>
 

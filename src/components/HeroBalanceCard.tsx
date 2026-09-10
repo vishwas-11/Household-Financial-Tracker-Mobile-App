@@ -8,18 +8,30 @@ import { AnimatedCounter } from './AnimatedCounter';
 import { Colors } from '../constants/colors';
 import { formatCurrency } from '../lib/currency';
 
+export interface UpcomingRecurringItemPreview {
+  id: string;
+  title: string;
+  amount: number;
+  dueText: string;
+  isDueToday: boolean;
+  category?: string;
+  frequency?: string;
+}
+
 interface HeroBalanceCardProps {
   balance: number; // Current Holding (Realized cash on hand)
   totalIncome: number; // Realized income
   totalExpense: number; // Realized expenses
   savingsRate: number;
-  householdName: string;
+  householdName?: string;
   recurringMonthlyOutflow?: number;
   projectedBalance?: number; // Projected month-end balance after upcoming transactions
   upcomingIncome?: number;
   upcomingExpense?: number;
   upcomingCount?: number;
   earliestUpcomingDate?: string;
+  upcomingRecurringItems?: UpcomingRecurringItemPreview[];
+  onNavigateToRecurring?: () => void;
 }
 
 export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
@@ -34,6 +46,8 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
   upcomingExpense = 0,
   upcomingCount = 0,
   earliestUpcomingDate,
+  upcomingRecurringItems = [],
+  onNavigateToRecurring,
 }) => {
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -194,17 +208,56 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             {/* Dedicated Recurring Commitments Strip directly under upcoming payments */}
             {recurringMonthlyOutflow > 0 && (
               <View style={[styles.recurringStrip, upcomingCount > 0 && styles.recurringStripAttached]}>
-                <View style={styles.recurringStripLeft}>
-                  <View style={styles.recurringStripIconCircle}>
-                    <Repeat size={10.5} color="#A5B4FC" />
+                {/* Header: Title on left, total committed outflow on right */}
+                <View style={styles.recurringStripHeader}>
+                  <View style={styles.recurringStripLeft}>
+                    <View style={styles.recurringStripIconCircle}>
+                      <Repeat size={10.5} color="#A5B4FC" />
+                    </View>
+                    <Text style={styles.recurringStripTitle}>RECURRING COMMITMENTS</Text>
                   </View>
-                  <Text style={styles.recurringStripTitle}>RECURRING COMMITMENTS</Text>
+                  <View style={styles.recurringStripRight}>
+                    <Text style={styles.recurringStripValue}>
+                      {formatCurrency(recurringMonthlyOutflow, { showDecimals: false })}/mo
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.recurringStripRight}>
-                  <Text style={styles.recurringStripValue}>
-                    {formatCurrency(recurringMonthlyOutflow, { showDecimals: false })}/mo
-                  </Text>
-                </View>
+
+                {/* Closest 2-3 Recurring Obligations Listed Vertically */}
+                {upcomingRecurringItems && upcomingRecurringItems.length > 0 && (
+                  <View style={styles.recurringItemsContainer}>
+                    {upcomingRecurringItems.map((item, idx) => (
+                      <View
+                        key={item.id}
+                        style={[
+                          styles.recurringItemRow,
+                          idx > 0 && styles.recurringItemRowBorder,
+                        ]}
+                      >
+                        <View style={styles.recurringItemLeft}>
+                          <Text style={styles.recurringItemTitle} numberOfLines={1}>
+                            {item.title}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.recurringItemDueText,
+                              item.isDueToday && styles.recurringItemDueToday,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {item.dueText}
+                          </Text>
+                        </View>
+
+                        <View style={styles.recurringItemRight}>
+                          <Text style={styles.recurringItemAmount}>
+                            -{formatCurrency(item.amount)}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -534,19 +587,21 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   recurringStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: 'rgba(99, 102, 241, 0.08)',
     borderWidth: 1,
     borderColor: 'rgba(129, 140, 248, 0.22)',
     borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 7.5,
+    paddingVertical: 9,
     marginTop: 10,
   },
   recurringStripAttached: {
     marginTop: 6,
+  },
+  recurringStripHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   recurringStripLeft: {
     flexDirection: 'row',
@@ -577,6 +632,52 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontWeight: '700',
     color: '#A5B4FC',
+  },
+  recurringItemsContainer: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.07)',
+    gap: 6,
+  },
+  recurringItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 2,
+    gap: 10,
+  },
+  recurringItemRowBorder: {
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  recurringItemLeft: {
+    flex: 1,
+  },
+  recurringItemTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#F1F5F9',
+    marginBottom: 1.5,
+  },
+  recurringItemDueText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    color: '#94A3B8',
+  },
+  recurringItemDueToday: {
+    color: '#F43F5E',
+    fontWeight: '700',
+  },
+  recurringItemRight: {
+    alignItems: 'flex-end',
+  },
+  recurringItemAmount: {
+    fontSize: 12.5,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: '#F87171',
   },
   projectedTargetAmount: {
     fontSize: 13,
