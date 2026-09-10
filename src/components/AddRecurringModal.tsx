@@ -131,14 +131,26 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
       visible={visible}
       transparent
       animationType="slide"
+      statusBarTranslucent
       onRequestClose={handleClose}
     >
       <View style={styles.overlay}>
+        {/* Tap outside backdrop to close */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={handleClose}
+        />
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardAvoid}
         >
-          <View style={[styles.container, { maxHeight: windowHeight * 0.9 }]}>
+          <View
+            style={[
+              styles.container,
+              { height: Math.round(windowHeight * 0.88) },
+            ]}
+          >
             {/* Header */}
             <View style={styles.header}>
               <View>
@@ -358,13 +370,12 @@ const styles = StyleSheet.create({
   },
   container: {
     backgroundColor: Colors.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
     width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
@@ -396,6 +407,7 @@ const styles = StyleSheet.create({
   },
   formContent: {
     padding: 20,
+    paddingBottom: 30,
     gap: 16,
   },
   typeSelector: {
