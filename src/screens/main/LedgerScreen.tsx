@@ -353,39 +353,41 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
           {/* Scheduled Upcoming Transactions Strip for this month */}
           {!isAllTime && monthMetrics.upcomingCount > 0 && (
             <View style={styles.ledgerUpcomingStrip}>
-              <View style={styles.ledgerUpcomingHeaderRow}>
+              <View style={styles.ledgerUpcomingHeader}>
                 <View style={styles.ledgerUpcomingBadge}>
-                  <Clock size={10.5} color="#A5B4FC" />
+                  <Clock size={10} color="#A5B4FC" />
                   <Text style={styles.ledgerUpcomingBadgeText}>
                     UPCOMING {monthMetrics.earliestUpcomingDate ? `· DUE ${monthMetrics.earliestUpcomingDate.toUpperCase()}` : ''}
                   </Text>
                 </View>
-                <View style={styles.ledgerUpcomingTargetPill}>
-                  <Text style={styles.ledgerUpcomingTargetLabel}>Projected Net</Text>
-                  <Text style={styles.ledgerUpcomingTargetValue}>
-                    {monthMetrics.projectedNet > 0 ? '+' : ''}{formatCurrency(monthMetrics.projectedNet)}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.ledgerUpcomingBreakdownRow}>
-                <Text style={styles.ledgerUpcomingCountLabel}>
-                  {monthMetrics.upcomingCount} scheduled:
+                <Text style={styles.ledgerUpcomingCountText}>
+                  {monthMetrics.upcomingCount} scheduled
                 </Text>
+              </View>
+
+              <View style={styles.ledgerUpcomingBodyRow}>
                 <View style={styles.ledgerUpcomingPillsWrap}>
                   {monthMetrics.upcomingIncome > 0 && (
                     <View style={styles.ledgerIncomePill}>
                       <Text style={styles.ledgerIncomeText}>
-                        +{formatCurrency(monthMetrics.upcomingIncome, { showDecimals: false })} Inflow
+                        +{formatCurrency(monthMetrics.upcomingIncome, { showDecimals: false })}
                       </Text>
                     </View>
                   )}
                   {monthMetrics.upcomingExpense > 0 && (
                     <View style={styles.ledgerExpensePill}>
                       <Text style={styles.ledgerExpenseText}>
-                        -{formatCurrency(monthMetrics.upcomingExpense, { showDecimals: false })} Outflow
+                        -{formatCurrency(monthMetrics.upcomingExpense, { showDecimals: false })}
                       </Text>
                     </View>
                   )}
+                </View>
+
+                <View style={styles.ledgerUpcomingTargetBlock}>
+                  <Text style={styles.ledgerUpcomingTargetLabel}>Projected Net</Text>
+                  <Text style={styles.ledgerUpcomingTargetValue}>
+                    {monthMetrics.projectedNet > 0 ? '+' : ''}{formatCurrency(monthMetrics.projectedNet)}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -942,80 +944,64 @@ const styles = StyleSheet.create({
     marginTop: 12,
     backgroundColor: 'rgba(99, 102, 241, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(129, 140, 248, 0.24)',
+    borderColor: 'rgba(129, 140, 248, 0.22)',
     borderRadius: 10,
-    paddingHorizontal: 11,
+    paddingHorizontal: 12,
     paddingVertical: 9,
     gap: 7,
   },
-  ledgerUpcomingHeaderRow: {
+  ledgerUpcomingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    paddingBottom: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   ledgerUpcomingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4.5,
+    gap: 4,
     backgroundColor: 'rgba(99, 102, 241, 0.16)',
-    paddingHorizontal: 6.5,
-    paddingVertical: 2.5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 5,
   },
   ledgerUpcomingBadgeText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontFamily: 'monospace',
     fontWeight: '700',
     color: '#C7D2FE',
     letterSpacing: 0.5,
   },
-  ledgerUpcomingTargetPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  ledgerUpcomingTargetLabel: {
-    fontSize: 10,
+  ledgerUpcomingCountText: {
+    fontSize: 9.5,
     color: '#94A3B8',
-    fontWeight: '500',
-  },
-  ledgerUpcomingTargetValue: {
-    fontSize: 12,
-    fontWeight: '700',
     fontFamily: 'monospace',
-    color: '#FFFFFF',
   },
-  ledgerUpcomingBreakdownRow: {
+  ledgerUpcomingBodyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
-    paddingTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  ledgerUpcomingCountLabel: {
-    fontSize: 10,
-    color: '#94A3B8',
-    fontWeight: '500',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   ledgerUpcomingPillsWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     flexWrap: 'wrap',
+    flex: 1,
   },
   ledgerIncomePill: {
     backgroundColor: 'rgba(16, 185, 129, 0.14)',
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.3)',
     paddingHorizontal: 6,
-    paddingVertical: 1.5,
+    paddingVertical: 2,
     borderRadius: 5,
   },
   ledgerIncomeText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '700',
     fontFamily: 'monospace',
     color: '#10B981',
@@ -1025,14 +1011,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(244, 63, 94, 0.3)',
     paddingHorizontal: 6,
-    paddingVertical: 1.5,
+    paddingVertical: 2,
     borderRadius: 5,
   },
   ledgerExpenseText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '700',
     fontFamily: 'monospace',
     color: '#F43F5E',
+  },
+  ledgerUpcomingTargetBlock: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  ledgerUpcomingTargetLabel: {
+    fontSize: 9,
+    color: '#94A3B8',
+    fontWeight: '500',
+    marginBottom: 1,
+  },
+  ledgerUpcomingTargetValue: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    fontFamily: 'monospace',
+    color: '#FFFFFF',
   },
   newEntryBtn: {
     flexDirection: 'row',

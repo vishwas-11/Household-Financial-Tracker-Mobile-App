@@ -162,25 +162,21 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             {/* Upcoming / Projected Month-End Callout */}
             {upcomingCount > 0 && projectedBalance !== undefined && (
               <View style={styles.projectedBanner}>
-                {/* Header Row: Timing badge & Expected month-end balance */}
-                <View style={styles.projectedBannerTop}>
+                {/* Header Row: Timing badge on left, count on right */}
+                <View style={styles.projectedHeader}>
                   <View style={styles.projectedBadge}>
-                    <Clock size={11} color="#A5B4FC" />
+                    <Clock size={10} color="#A5B4FC" />
                     <Text style={styles.projectedBadgeText}>
                       UPCOMING {earliestUpcomingDate ? `· ${earliestUpcomingDate.toUpperCase()}` : ''}
                     </Text>
                   </View>
-                  <View style={styles.projectedTargetPill}>
-                    <Text style={styles.projectedTargetLabel}>Month-End Est.</Text>
-                    <Text style={styles.projectedTargetAmount}>{formatCurrency(projectedBalance)}</Text>
-                  </View>
+                  <Text style={styles.projectedCountText}>
+                    {upcomingCount} scheduled {upcomingCount === 1 ? 'entry' : 'entries'}
+                  </Text>
                 </View>
 
-                {/* Sub Row: Scheduled atomic inflow / outflow pills */}
-                <View style={styles.projectedBreakdownRow}>
-                  <Text style={styles.projectedCountLabel}>
-                    {upcomingCount} scheduled:
-                  </Text>
+                {/* Main Content Row: Flow Pills on left, Month-End Est. stacked on right */}
+                <View style={styles.projectedBodyRow}>
                   <View style={styles.projectedPillsWrap}>
                     {upcomingIncome > 0 && (
                       <View style={styles.projectedIncomePill}>
@@ -196,6 +192,13 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                         </Text>
                       </View>
                     )}
+                  </View>
+
+                  <View style={styles.projectedTargetBlock}>
+                    <Text style={styles.projectedTargetLabel}>Month-End Est.</Text>
+                    <Text style={styles.projectedTargetAmount}>
+                      {formatCurrency(projectedBalance)}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -446,102 +449,98 @@ const styles = StyleSheet.create({
     marginTop: 12,
     backgroundColor: 'rgba(99, 102, 241, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(129, 140, 248, 0.24)',
+    borderColor: 'rgba(129, 140, 248, 0.22)',
     borderRadius: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 13,
     paddingVertical: 10,
     gap: 8,
   },
-  projectedBannerTop: {
+  projectedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    paddingBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
   },
   projectedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 4.5,
     backgroundColor: 'rgba(99, 102, 241, 0.16)',
     paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingVertical: 2.5,
+    borderRadius: 5,
   },
   projectedBadgeText: {
-    fontSize: 9.5,
+    fontSize: 9,
     fontFamily: 'monospace',
     fontWeight: '700',
     color: '#C7D2FE',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
-  projectedTargetPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  projectedTargetLabel: {
-    fontSize: 10.5,
+  projectedCountText: {
+    fontSize: 10,
     color: '#94A3B8',
-    fontWeight: '500',
-  },
-  projectedTargetAmount: {
-    fontSize: 12.5,
-    color: '#FFFFFF',
-    fontWeight: '700',
     fontFamily: 'monospace',
-    letterSpacing: -0.2,
   },
-  projectedBreakdownRow: {
+  projectedBodyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 7,
-    paddingTop: 7,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  projectedCountLabel: {
-    fontSize: 10.5,
-    color: '#94A3B8',
-    fontWeight: '500',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   projectedPillsWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     flexWrap: 'wrap',
+    flex: 1,
   },
   projectedIncomePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: 'rgba(16, 185, 129, 0.14)',
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.3)',
     paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
     borderRadius: 6,
   },
   projectedIncomeText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
     fontFamily: 'monospace',
     color: '#10B981',
   },
   projectedExpensePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: 'rgba(244, 63, 94, 0.14)',
     borderWidth: 1,
     borderColor: 'rgba(244, 63, 94, 0.3)',
     paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingVertical: 2.5,
     borderRadius: 6,
   },
   projectedExpenseText: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: '700',
     fontFamily: 'monospace',
     color: '#F43F5E',
+  },
+  projectedTargetBlock: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  projectedTargetLabel: {
+    fontSize: 9.5,
+    color: '#94A3B8',
+    fontWeight: '500',
+    marginBottom: 1,
+  },
+  projectedTargetAmount: {
+    fontSize: 13,
+    color: '#FFFFFF',
+    fontWeight: '800',
+    fontFamily: 'monospace',
+    letterSpacing: -0.2,
   },
   divider: {
     height: 1.5,
