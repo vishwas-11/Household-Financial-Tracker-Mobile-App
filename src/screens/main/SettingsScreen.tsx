@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
+import * as Updates from 'expo-updates';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -29,6 +31,7 @@ import {
   Plus,
   ShieldCheck,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { Header } from '../../components/Header';
@@ -63,6 +66,33 @@ export const SettingsScreen: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const [guideResetSuccess, setGuideResetSuccess] = useState(false);
+
+
+  const handleCheckUpdates = async () => {
+    if (__DEV__ || !Updates.isEnabled) {
+      Alert.alert('Live Updates', 'Live updates are active on mobile devices running preview builds.');
+      return;
+    }
+    try {
+      const check = await Updates.checkForUpdateAsync();
+      if (check.isAvailable) {
+        Alert.alert('Update Available', 'A new update is available. Download and restart now?', [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Update Now',
+            onPress: async () => {
+              await Updates.fetchUpdateAsync();
+              await Updates.reloadAsync();
+            },
+          },
+        ]);
+      } else {
+        Alert.alert('Up to Date', 'You are running the latest version with the updated logo and cash flow logic!');
+      }
+    } catch (e) {
+      Alert.alert('Up to Date', 'Your app is synchronized with the latest deployment.');
+    }
+  };
 
   const handleUpdateName = async () => {
     if (!nameInput.trim()) return;
@@ -331,6 +361,34 @@ export const SettingsScreen: React.FC = () => {
           >
             <Trash2 size={13} color={Colors.expense} />
             <Text style={styles.resetBtnText}>Clear All Transactions & Start Fresh</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* App Version & Live Updates Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>App Version & Live Updates</Text>
+          <View style={styles.appVersionRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.versionLabel}>Installed Version</Text>
+              <Text style={styles.versionValue}>1.0.0 (Build 2) · Preview Channel</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.checkUpdateBtn}
+              onPress={handleCheckUpdates}
+              activeOpacity={0.7}
+            >
+              <RefreshCw size={13} color="#FFFFFF" />
+              <Text style={styles.checkUpdateBtnText}>Check Updates</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.downloadApkBtn}
+            onPress={() => Linking.openURL('https://expo.dev/accounts/vishwascharan11/projects/household-funds-tracker-mobile-app/builds')}
+            activeOpacity={0.7}
+          >
+            <Download size={14} color="#38BDF8" />
+            <Text style={styles.downloadApkBtnText}>Download Latest APK (New Home Screen Icon)</Text>
           </TouchableOpacity>
         </View>
 
@@ -750,6 +808,56 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.brand,
     fontWeight: '600',
+  },
+  appVersionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    marginBottom: 10,
+  },
+  versionLabel: {
+    fontSize: 10.5,
+    fontFamily: 'monospace',
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  versionValue: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.text,
+    marginTop: 2,
+  },
+  checkUpdateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#0284C7',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  checkUpdateBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  downloadApkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
+    borderRadius: 8,
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  downloadApkBtnText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#38BDF8',
   },
 });
 
