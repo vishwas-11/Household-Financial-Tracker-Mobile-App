@@ -24,6 +24,7 @@ import { TRANSACTION_CATEGORIES } from '../constants/initialData';
 import { useApp } from '../context/AppContext';
 import { uploadReceiptImage } from '../lib/storage';
 import { MiniDatePicker } from './MiniDatePicker';
+import { CURRENCY_SYMBOL } from '../lib/currency';
 
 interface AddTransactionModalProps {
   visible: boolean;
@@ -293,7 +294,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                         style={styles.switchIncomeBtn}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.switchIncomeText}>Switch to Income First â†’</Text>
+                        <Text style={styles.switchIncomeText}>Switch to Income First →</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -345,9 +346,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
 
               {/* Amount Input */}
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Amount (â‚¹) *</Text>
+                <Text style={styles.fieldLabel}>Amount ({CURRENCY_SYMBOL}) *</Text>
                 <View style={styles.amountInputContainer}>
-                  <Text style={styles.currencySymbol}>â‚¹</Text>
+                  <Text style={styles.currencySymbol}>{CURRENCY_SYMBOL}</Text>
                   <TextInput
                     style={styles.amountInput}
                     placeholder="0.00"

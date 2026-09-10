@@ -23,6 +23,7 @@ import {
 } from 'lucide-react-native';
 import { Colors } from '../constants/colors';
 import { useApp } from '../context/AppContext';
+import { CURRENCY_SYMBOL } from '../lib/currency';
 
 interface GettingStartedCardProps {
   onOpenAddTransaction: (preselectedType?: 'income' | 'expenditure') => void;
@@ -171,7 +172,7 @@ export const GettingStartedCard: React.FC<GettingStartedCardProps> = ({
               </Text>
               <Text style={styles.stepDesc}>
                 {isStep2Done
-                  ? `Opening income active. Balance: â‚¹${(transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)).toLocaleString('en-IN')}`
+                  ? `Opening income active. Balance: ${CURRENCY_SYMBOL}${(transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)).toLocaleString('en-IN')}`
                   : 'Important: Record your salary, deposit, or cash balance first so your balance does not start in negative.'}
               </Text>
             </View>
