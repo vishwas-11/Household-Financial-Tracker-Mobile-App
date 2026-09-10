@@ -36,9 +36,9 @@ export const RootNavigator: React.FC = () => {
     <>
       <NavigationContainer>
         {!user ? (
-          <AuthNavigator initialRouteName="Login" />
+          <AuthNavigator key="auth-login" initialRouteName="Login" />
         ) : !user.householdId ? (
-          <AuthNavigator initialRouteName="Onboarding" />
+          <AuthNavigator key="auth-onboarding" initialRouteName="Onboarding" />
         ) : (
           <AppNavigator />
         )}

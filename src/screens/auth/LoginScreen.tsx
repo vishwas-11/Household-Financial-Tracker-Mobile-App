@@ -63,7 +63,11 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     setLoading(true);
     const res = await login(email, password);
     setLoading(false);
-    if (!res.success) setError(res.error || 'Invalid credentials.');
+    if (!res.success) {
+      setError(res.error || 'Invalid credentials.');
+    } else if (!res.session?.householdId) {
+      navigation.navigate('Onboarding');
+    }
   };
 
   return (

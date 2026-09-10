@@ -23,7 +23,6 @@ import {
   ArrowRight,
   ShieldCheck,
   AlertCircle,
-  Home,
 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { HouseholdFundsLogo } from '../../components/HouseholdFundsLogo';
@@ -35,14 +34,12 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [householdName, setHouseholdName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const emailInputRef = useRef<TextInput>(null);
-  const householdInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -56,7 +53,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   }, []);
 
   const handleSignUp = async () => {
-    if (!name.trim() || !email.trim() || !password || !householdName.trim()) {
+    if (!name.trim() || !email.trim() || !password) {
       setError('Please fill in all fields.');
       return;
     }
@@ -64,7 +61,11 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     setLoading(true);
     const res = await signup(name, email, password);
     setLoading(false);
-    if (!res.success) setError(res.error || 'Sign up failed.');
+    if (!res.success) {
+      setError(res.error || 'Sign up failed.');
+    } else {
+      navigation.navigate('Onboarding');
+    }
   };
 
   return (
@@ -90,7 +91,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               <HouseholdFundsLogo size={26} color={Colors.white} />
             </LinearGradient>
             <Text style={styles.heroTitle}>Create Account</Text>
-            <Text style={styles.heroSubtitle}>Set up your household financial ledger</Text>
+            <Text style={styles.heroSubtitle}>Set up your personal access to family finances</Text>
           </Animated.View>
 
           {/* Form Card */}
@@ -102,9 +103,9 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               </View>
             )}
 
-            {/* Full Name */}
+            {/* Name */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>FULL NAME</Text>
+              <Text style={styles.inputLabel}>YOUR FULL NAME</Text>
               <View style={[styles.inputWrapper, focusedField === 'name' && styles.inputWrapperFocused]}>
                 <User
                   size={16}
@@ -114,34 +115,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 <TextInput
                   value={name}
                   onChangeText={setName}
-                  placeholder="Your name"
-                  placeholderTextColor={Colors.textSubdued}
-                  autoCapitalize="words"
-                  autoCorrect={false}
-                  returnKeyType="next"
-                  blurOnSubmit={false}
-                  onSubmitEditing={() => householdInputRef.current?.focus()}
-                  style={styles.input}
-                  onFocus={() => setFocusedField('name')}
-                  onBlur={() => setFocusedField(null)}
-                />
-              </View>
-            </View>
-
-            {/* Household Name */}
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>HOUSEHOLD NAME</Text>
-              <View style={[styles.inputWrapper, focusedField === 'household' && styles.inputWrapperFocused]}>
-                <Home
-                  size={16}
-                  color={focusedField === 'household' ? Colors.brand : Colors.textSubdued}
-                  style={{ marginRight: 10 }}
-                />
-                <TextInput
-                  ref={householdInputRef}
-                  value={householdName}
-                  onChangeText={setHouseholdName}
-                  placeholder="e.g. The Sharma Family"
+                  placeholder="e.g. John Doe"
                   placeholderTextColor={Colors.textSubdued}
                   autoCapitalize="words"
                   autoCorrect={false}
@@ -149,7 +123,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                   blurOnSubmit={false}
                   onSubmitEditing={() => emailInputRef.current?.focus()}
                   style={styles.input}
-                  onFocus={() => setFocusedField('household')}
+                  onFocus={() => setFocusedField('name')}
                   onBlur={() => setFocusedField(null)}
                 />
               </View>
@@ -157,7 +131,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
             {/* Email */}
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>EMAIL</Text>
+              <Text style={styles.inputLabel}>EMAIL ADDRESS</Text>
               <View style={[styles.inputWrapper, focusedField === 'email' && styles.inputWrapperFocused]}>
                 <Mail
                   size={16}
@@ -230,7 +204,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                   <ActivityIndicator size="small" color={Colors.white} />
                 ) : (
                   <>
-                    <Text style={styles.submitBtnText}>Create Account</Text>
+                    <Text style={styles.submitBtnText}>Continue to Setup</Text>
                     <ArrowRight size={16} color={Colors.white} />
                   </>
                 )}

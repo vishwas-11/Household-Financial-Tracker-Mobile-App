@@ -47,8 +47,8 @@ interface AppContextType {
   switchHousehold: (householdId: string) => Promise<{ success: boolean; error?: string }>;
 
   // Auth & Household methods
-  login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (name: string, email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, pass: string) => Promise<{ success: boolean; session?: UserSession; error?: string }>;
+  signup: (name: string, email: string, pass: string) => Promise<{ success: boolean; session?: UserSession; error?: string }>;
   logout: () => Promise<void>;
   createHousehold: (name: string) => Promise<{ success: boolean; error?: string }>;
   joinHousehold: (code: string) => Promise<{ success: boolean; error?: string }>;

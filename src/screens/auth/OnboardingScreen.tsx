@@ -18,7 +18,7 @@ import { HouseholdFundsLogo } from '../../components/HouseholdFundsLogo';
 import { useApp } from '../../context/AppContext';
 
 export const OnboardingScreen: React.FC = () => {
-  const { createHousehold, joinHousehold, user } = useApp();
+  const { createHousehold, joinHousehold, user, logout } = useApp();
 
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [householdName, setHouseholdName] = useState('');
@@ -219,6 +219,16 @@ export const OnboardingScreen: React.FC = () => {
             )}
           </View>
 
+          {/* Account & Sign out */}
+          <View style={styles.accountRow}>
+            <Text style={styles.accountText}>
+              Signed in as <Text style={{ color: Colors.text, fontWeight: '600' }}>{user?.email || 'User'}</Text>
+            </Text>
+            <TouchableOpacity onPress={logout} style={styles.logoutBtn} activeOpacity={0.7}>
+              <Text style={styles.logoutBtnText}>Sign out</Text>
+            </TouchableOpacity>
+          </View>
+
           {/* Security Tag */}
           <View style={styles.securityBadge}>
             <ShieldCheck size={14} color={Colors.income} />
@@ -396,6 +406,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: Colors.white,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surfaceCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 16,
+  },
+  accountText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    flex: 1,
+    marginRight: 8,
+  },
+  logoutBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: Colors.surfaceElevated,
+    borderWidth: 1,
+    borderColor: Colors.borderLight,
+  },
+  logoutBtnText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: Colors.expense,
   },
   securityBadge: {
     flexDirection: 'row',
