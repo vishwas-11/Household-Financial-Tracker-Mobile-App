@@ -86,8 +86,7 @@ export function calculateBalanceMetrics(
 
   for (const item of recurringItems) {
     const info = getRecurringScheduleInfo(item, transactions, now);
-    // If not yet settled this month and due day is in the future (> todayDate)
-    if (!info.isSettledThisMonth && info.dueDay > todayDate) {
+    if (!info.isSettledThisMonth && info.isUpcomingThisMonth) {
       upcomingCount++;
       if (item.type === 'income') {
         upcomingIncome += item.amount;
@@ -95,12 +94,9 @@ export function calculateBalanceMetrics(
         upcomingExpense += item.amount;
       }
 
-      const dueFullDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(info.dueDay).padStart(2, '0')}`;
-      const dueDisplayDate = new Date(currentYear, currentMonth, info.dueDay).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-      if (!earliestUpcomingFullDate || dueFullDate < earliestUpcomingFullDate) {
-        earliestUpcomingFullDate = dueFullDate;
-        earliestUpcomingDateLabel = dueDisplayDate;
+      if (!earliestUpcomingFullDate || info.nextOccurrenceDateStr < earliestUpcomingFullDate) {
+        earliestUpcomingFullDate = info.nextOccurrenceDateStr;
+        earliestUpcomingDateLabel = info.nextDateStr;
       }
     }
   }
@@ -189,7 +185,7 @@ export function calculateMonthMetrics(
 
   for (const item of recurringItems) {
     const info = getRecurringScheduleInfo(item, monthTransactions, now);
-    if (!info.isSettledThisMonth && info.dueDay > todayDate) {
+    if (!info.isSettledThisMonth && info.isUpcomingThisMonth) {
       upcomingCount++;
       if (item.type === 'income') {
         upcomingIncome += item.amount;
@@ -197,12 +193,9 @@ export function calculateMonthMetrics(
         upcomingExpense += item.amount;
       }
 
-      const dueFullDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(info.dueDay).padStart(2, '0')}`;
-      const dueDisplayDate = new Date(currentYear, currentMonth, info.dueDay).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-      if (!earliestUpcomingFullDate || dueFullDate < earliestUpcomingFullDate) {
-        earliestUpcomingFullDate = dueFullDate;
-        earliestUpcomingDateLabel = dueDisplayDate;
+      if (!earliestUpcomingFullDate || info.nextOccurrenceDateStr < earliestUpcomingFullDate) {
+        earliestUpcomingFullDate = info.nextOccurrenceDateStr;
+        earliestUpcomingDateLabel = info.nextDateStr;
       }
     }
   }

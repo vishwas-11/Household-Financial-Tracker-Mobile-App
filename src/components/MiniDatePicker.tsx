@@ -19,6 +19,7 @@ import {
 import { Colors } from '../constants/colors';
 
 interface MiniDatePickerProps {
+  stepFlow?: boolean;
   value: string; // YYYY-MM-DD format
   onChange: (dateStr: string) => void;
   label?: string;
@@ -65,6 +66,7 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
   onChange,
   label = 'DATE',
   accentColor = Colors.brand,
+  stepFlow = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'days' | 'months' | 'years'>('days');
@@ -82,7 +84,7 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
       setViewYear(selectedDate.year);
       setViewMonth(selectedDate.month);
       setDecadeStart(Math.floor(selectedDate.year / 12) * 12);
-      setViewMode('days');
+      setViewMode(stepFlow ? 'years' : 'days');
     }
     setIsOpen(!isOpen);
   };
@@ -226,7 +228,7 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
     const maxDays = new Date(yearNum, viewMonth + 1, 0).getDate();
     const newDay = Math.min(selectedDate.day, maxDays);
     onChange(formatDateString(yearNum, viewMonth, newDay));
-    setViewMode('days');
+    setViewMode('months');
   };
 
   const handleQuickToday = () => {
@@ -290,6 +292,63 @@ export const MiniDatePicker: React.FC<MiniDatePickerProps> = ({
       {/* Expanded Mini Calendar */}
       {isOpen && (
         <View style={styles.calendarCard}>
+          {/* Step Guidance Breadcrumbs when stepFlow is active */}
+          {stepFlow && (
+            <View style={styles.stepBreadcrumbsContainer}>
+              <TouchableOpacity
+                onPress={() => setViewMode('years')}
+                style={[
+                  styles.stepBreadcrumbPill,
+                  viewMode === 'years' && [styles.stepBreadcrumbActive, { borderColor: accentColor, backgroundColor: `${accentColor}25` }],
+                ]}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.stepNumBadge, viewMode === 'years' && { backgroundColor: accentColor }]}>
+                  <Text style={[styles.stepNumText, viewMode === 'years' && styles.stepNumTextActive]}>1</Text>
+                </View>
+                <Text style={[styles.stepBreadcrumbLabel, viewMode === 'years' && { color: accentColor, fontWeight: '700' }]}>
+                  Year ({viewYear})
+                </Text>
+              </TouchableOpacity>
+
+              <ChevronRight size={12} color={Colors.textMuted} />
+
+              <TouchableOpacity
+                onPress={() => setViewMode('months')}
+                style={[
+                  styles.stepBreadcrumbPill,
+                  viewMode === 'months' && [styles.stepBreadcrumbActive, { borderColor: accentColor, backgroundColor: `${accentColor}25` }],
+                ]}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.stepNumBadge, viewMode === 'months' && { backgroundColor: accentColor }]}>
+                  <Text style={[styles.stepNumText, viewMode === 'months' && styles.stepNumTextActive]}>2</Text>
+                </View>
+                <Text style={[styles.stepBreadcrumbLabel, viewMode === 'months' && { color: accentColor, fontWeight: '700' }]}>
+                  Month ({MONTH_SHORT_NAMES[viewMonth]})
+                </Text>
+              </TouchableOpacity>
+
+              <ChevronRight size={12} color={Colors.textMuted} />
+
+              <TouchableOpacity
+                onPress={() => setViewMode('days')}
+                style={[
+                  styles.stepBreadcrumbPill,
+                  viewMode === 'days' && [styles.stepBreadcrumbActive, { borderColor: accentColor, backgroundColor: `${accentColor}25` }],
+                ]}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.stepNumBadge, viewMode === 'days' && { backgroundColor: accentColor }]}>
+                  <Text style={[styles.stepNumText, viewMode === 'days' && styles.stepNumTextActive]}>3</Text>
+                </View>
+                <Text style={[styles.stepBreadcrumbLabel, viewMode === 'days' && { color: accentColor, fontWeight: '700' }]}>
+                  Day ({selectedDate.day})
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Quick Shortcut Buttons */}
           <View style={styles.quickShortcutsRow}>
             <TouchableOpacity
@@ -633,6 +692,52 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.textSecondary,
     letterSpacing: 0.5,
+  },
+  stepBreadcrumbsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  stepBreadcrumbPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  stepBreadcrumbActive: {
+    borderWidth: 1,
+  },
+  stepNumBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.textMuted,
+  },
+  stepNumTextActive: {
+    color: Colors.white,
+  },
+  stepBreadcrumbLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: Colors.textSecondary,
   },
   calendarCard: {
     backgroundColor: Colors.surfaceElevated,

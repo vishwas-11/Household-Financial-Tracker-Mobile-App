@@ -43,7 +43,15 @@ export const RecurringItemRow: React.FC<RecurringItemRowProps> = ({
         <View style={styles.metaRow}>
           <View style={styles.dueDateRow}>
             <Clock size={11} color={Colors.textSubdued} />
-            <Text style={styles.dueDateText}>{item.nextDueDate}</Text>
+            <Text style={styles.dueDateText}>
+            {item.nextDueDate && /^\d{4}-\d{2}-\d{2}$/.test(item.nextDueDate)
+              ? new Date(
+                  parseInt(item.nextDueDate.split('-')[0], 10),
+                  parseInt(item.nextDueDate.split('-')[1], 10) - 1,
+                  parseInt(item.nextDueDate.split('-')[2], 10)
+                ).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              : item.nextDueDate}
+          </Text>
           </View>
 
           {item.autoPay ? (
