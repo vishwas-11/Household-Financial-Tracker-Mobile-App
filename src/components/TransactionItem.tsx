@@ -1,8 +1,9 @@
 ﻿// src/components/TransactionItem.tsx
 import React, { useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Platform } from 'react-native';
-import { ShoppingCart, Zap, CreditCard, Coffee, Home, Briefcase, FileText, Trash2, Paperclip, PiggyBank, Bus, BookOpen, Activity, Music, Tag } from 'lucide-react-native';
+import { ShoppingCart, Clock, Zap, CreditCard, Coffee, Home, Briefcase, FileText, Trash2, Paperclip, PiggyBank, Bus, BookOpen, Activity, Music, Tag } from 'lucide-react-native';
 import { Transaction } from '../types';
+import { isTransactionUpcoming } from '../lib/transactionCalculations';
 import { Colors } from '../constants/colors';
 import { formatCurrency } from '../lib/currency';
 
@@ -23,6 +24,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 }) => {
   const isIncome = transaction.type === 'income';
   const isSavings = transaction.type === 'savings';
+  const isUpcoming = isTransactionUpcoming(transaction.fullDate);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(12)).current;
@@ -91,6 +93,12 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
             <Text style={styles.metaCategory}>{transaction.category}</Text>
             <Text style={styles.metaDot}>·</Text>
             <Text style={styles.metaDate}>{transaction.date}</Text>
+            {isUpcoming && (
+              <View style={styles.upcomingPill}>
+                <Clock size={8.5} color="#A5B4FC" />
+                <Text style={styles.upcomingPillText}>Upcoming</Text>
+              </View>
+            )}
             {transaction.receiptUrl && (
               <TouchableOpacity style={styles.receiptChip} onPress={(e) => { e.stopPropagation(); if (onViewReceipt) onViewReceipt(transaction.receiptUrl!); }}>
                 <Paperclip size={9} color={Colors.brand} />
@@ -205,6 +213,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'monospace',
     letterSpacing: 0.5,
+  },
+  upcomingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3.5,
+    backgroundColor: 'rgba(99, 102, 241, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.35)',
+    paddingHorizontal: 5.5,
+    paddingVertical: 1.5,
+    borderRadius: 6,
+    marginLeft: 2,
+  },
+  upcomingPillText: {
+    fontSize: 9,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: '#C7D2FE',
   },
   deleteBtn: {
     padding: 4,

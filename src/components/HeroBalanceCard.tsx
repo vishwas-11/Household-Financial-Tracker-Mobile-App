@@ -1,20 +1,25 @@
-﻿// src/components/HeroBalanceCard.tsx
+// src/components/HeroBalanceCard.tsx
 // High-intensity Brushed Titanium & Specular Platinum Metallic Finish
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { TrendingUp, TrendingDown, Wallet, ShieldCheck, Repeat } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Wallet, ShieldCheck, Repeat, Clock } from 'lucide-react-native';
 import { AnimatedCounter } from './AnimatedCounter';
 import { Colors } from '../constants/colors';
 import { formatCurrency } from '../lib/currency';
 
 interface HeroBalanceCardProps {
-  balance: number;
-  totalIncome: number;
-  totalExpense: number;
+  balance: number; // Current Holding (Realized cash on hand)
+  totalIncome: number; // Realized income
+  totalExpense: number; // Realized expenses
   savingsRate: number;
   householdName: string;
   recurringMonthlyOutflow?: number;
+  projectedBalance?: number; // Projected month-end balance after upcoming transactions
+  upcomingIncome?: number;
+  upcomingExpense?: number;
+  upcomingCount?: number;
+  earliestUpcomingDate?: string;
 }
 
 export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
@@ -24,6 +29,11 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
   savingsRate,
   householdName,
   recurringMonthlyOutflow = 0,
+  projectedBalance,
+  upcomingIncome = 0,
+  upcomingExpense = 0,
+  upcomingCount = 0,
+  earliestUpcomingDate,
 }) => {
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -100,39 +110,35 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                 end={{ x: 1, y: 1 }}
                 style={styles.walletIcon}
               >
-                <Wallet size={13.5} color="#F1F5F9" />
+                <Wallet size={14} color="#CBD5E1" />
               </LinearGradient>
               <Text style={styles.householdLabel} numberOfLines={1}>
-                {householdName}
+                {householdName || 'Household Ledger'}
               </Text>
             </View>
 
-            {/* Titanium / Emerald Status Pill */}
             <View style={styles.headerRightBadgeRow}>
-              {savingsRate > 0 && (
-                <View style={styles.savingsRateBadge}>
-                  <TrendingUp size={11} color="#10B981" />
-                  <Text style={styles.savingsRateText}>{savingsRate}% saved</Text>
-                </View>
-              )}
-              {/* Polished Metallic Chip Badge */}
+              <View style={styles.savingsRateBadge}>
+                <TrendingUp size={11} color="#10B981" />
+                <Text style={styles.savingsRateText}>{savingsRate}% saved</Text>
+              </View>
               <LinearGradient
-                colors={['#2A303D', '#151820']}
+                colors={['#2D3342', '#181B22']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.metallicChip}
               >
-                <ShieldCheck size={11.5} color="#CBD5E1" />
+                <ShieldCheck size={12} color="#CBD5E1" />
               </LinearGradient>
             </View>
           </View>
 
-          {/* Balance Title & Amount */}
+          {/* Current Holding Display */}
           <View style={styles.balanceSection}>
             <View style={styles.balanceLabelRow}>
               <View style={styles.balanceLabelLeft}>
-                <Text style={styles.balanceLabel}>TOTAL BALANCE</Text>
-                <View style={styles.metallicDot} />
+                <View style={styles.liveHoldingDot} />
+                <Text style={styles.balanceLabel}>CURRENT HOLDING</Text>
               </View>
               {recurringMonthlyOutflow > 0 && (
                 <View style={styles.recurringChip}>
@@ -152,6 +158,26 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
               adjustsFontSizeToFit
               minimumFontScale={0.7}
             />
+
+            {/* Upcoming / Projected Month-End Callout */}
+            {upcomingCount > 0 && projectedBalance !== undefined && (
+              <View style={styles.projectedBanner}>
+                <View style={styles.projectedBannerTop}>
+                  <View style={styles.projectedBadge}>
+                    <Clock size={10.5} color="#818CF8" />
+                    <Text style={styles.projectedBadgeText}>
+                      UPCOMING {earliestUpcomingDate ? `· ${earliestUpcomingDate.toUpperCase()}` : ''}
+                    </Text>
+                  </View>
+                  <Text style={styles.projectedTargetText}>
+                    Month-End: <Text style={styles.projectedTargetAmount}>{formatCurrency(projectedBalance)}</Text>
+                  </Text>
+                </View>
+                <Text style={styles.projectedBreakdownText}>
+                  {upcomingCount} scheduled {upcomingCount === 1 ? 'transaction' : 'transactions'} ({upcomingIncome > 0 ? `+${formatCurrency(upcomingIncome, { showDecimals: false })}` : ''}{upcomingIncome > 0 && upcomingExpense > 0 ? ' · ' : ''}{upcomingExpense > 0 ? `-${formatCurrency(upcomingExpense, { showDecimals: false })}` : ''})
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Hairline Platinum Specular Divider */}
@@ -162,7 +188,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             style={styles.divider}
           />
 
-          {/* Income / Expense Sub-Cards with responsive auto-shrinking text */}
+          {/* Income / Expense Sub-Cards */}
           <View style={styles.pillsRow}>
             <LinearGradient
               colors={['rgba(255, 255, 255, 0.05)', 'rgba(255, 255, 255, 0.02)']}
@@ -174,7 +200,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                 <TrendingUp size={12.5} color="#10B981" />
               </View>
               <View style={styles.pillTextWrap}>
-                <Text style={styles.pillLabel} numberOfLines={1}>Total Income</Text>
+                <Text style={styles.pillLabel} numberOfLines={1}>Current Income</Text>
                 <AnimatedCounter
                   value={totalIncome}
                   prefix="₹"
@@ -197,7 +223,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                 <TrendingDown size={12.5} color="#F43F5E" />
               </View>
               <View style={styles.pillTextWrap}>
-                <Text style={styles.pillLabel} numberOfLines={1}>Total Expenses</Text>
+                <Text style={styles.pillLabel} numberOfLines={1}>Current Expenses</Text>
                 <AnimatedCounter
                   value={totalExpense}
                   prefix="₹"
@@ -235,7 +261,7 @@ const styles = StyleSheet.create({
   },
   bezelBorder: {
     borderRadius: 22,
-    padding: 1.5, // Crisp 1.5px titanium chamfer bezel
+    padding: 1.5,
     overflow: 'hidden',
   },
   gradient: {
@@ -293,7 +319,7 @@ const styles = StyleSheet.create({
     height: 30,
     borderRadius: 9,
     borderWidth: 1,
-    borderColor: 'rgba(203, 213, 225, 0.35)', // Sharp platinum rim
+    borderColor: 'rgba(203, 213, 225, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -348,6 +374,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
+  liveHoldingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
   recurringChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -369,13 +401,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#94A3B8',
-    letterSpacing: 1.6,
-  },
-  metallicDot: {
-    width: 4.5,
-    height: 4.5,
-    borderRadius: 2.5,
-    backgroundColor: '#CBD5E1',
+    letterSpacing: 1.4,
   },
   balanceAmount: {
     fontSize: 38,
@@ -394,6 +420,48 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  projectedBanner: {
+    marginTop: 10,
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.22)',
+    borderRadius: 10,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+    gap: 3,
+  },
+  projectedBannerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  projectedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4.5,
+  },
+  projectedBadgeText: {
+    fontSize: 9.5,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: '#A5B4FC',
+    letterSpacing: 0.6,
+  },
+  projectedTargetText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  projectedTargetAmount: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontFamily: 'monospace',
+  },
+  projectedBreakdownText: {
+    fontSize: 10.5,
+    color: '#CBD5E1',
+    fontFamily: 'monospace',
+  },
   divider: {
     height: 1.5,
     marginVertical: 14,
@@ -410,7 +478,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(203, 213, 225, 0.16)', // Prominent metallic inset border
+    borderColor: 'rgba(203, 213, 225, 0.16)',
     borderRadius: 13,
     paddingVertical: 9,
     paddingHorizontal: 9,

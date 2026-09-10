@@ -11,6 +11,7 @@ import {
 import { Colors } from '../../constants/colors';
 import { Header } from '../../components/Header';
 import { HeroBalanceCard } from '../../components/HeroBalanceCard';
+import { calculateBalanceMetrics } from '../../lib/transactionCalculations';
 import { RecurringCommitmentsCard } from '../../components/RecurringCommitmentsCard';
 import { CashFlowAreaChart } from '../../components/CashFlowAreaChart';
 import { CategoryDonutChart } from '../../components/CategoryDonutChart';
@@ -69,14 +70,25 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     setIsAddModalOpen(true);
   };
 
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'expenditure').reduce((s, t) => s + t.amount, 0);
-  const balance = totalIncome - totalExpense;
+  const balanceMetrics = calculateBalanceMetrics(transactions);
+  const {
+    currentHolding,
+    realizedIncome,
+    realizedExpense,
+    projectedBalance,
+    upcomingIncome,
+    upcomingExpense,
+    upcomingCount,
+    earliestUpcomingDate,
+    savingsRate,
+  } = balanceMetrics;
+
   const totalRecurringExpense = (recurringItems || [])
     .filter((r) => r.type === 'expenditure')
     .reduce((sum, r) => sum + r.amount, 0);
-  const savingsRate = totalIncome > 0 ? Math.max(0, Math.round(((totalIncome - totalExpense) / totalIncome) * 100)) : 0;
-  const recentTransactions = [...transactions].sort((a, b) => new Date(b.fullDate).getTime() - new Date(a.fullDate).getTime()).slice(0, 5);
+  const recentTransactions = [...transactions]
+    .sort((a, b) => new Date(b.fullDate).getTime() - new Date(a.fullDate).getTime())
+    .slice(0, 5);
   const hasNoData = transactions.length === 0;
 
   if (isLoading) {
@@ -112,12 +124,17 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         {/* ── Hero Balance Card ─────────────────────────── */}
         <View style={styles.section}>
           <HeroBalanceCard
-            balance={balance}
-            totalIncome={totalIncome}
-            totalExpense={totalExpense}
+            balance={currentHolding}
+            totalIncome={realizedIncome}
+            totalExpense={realizedExpense}
             savingsRate={savingsRate}
             householdName={householdName}
             recurringMonthlyOutflow={totalRecurringExpense}
+            projectedBalance={projectedBalance}
+            upcomingIncome={upcomingIncome}
+            upcomingExpense={upcomingExpense}
+            upcomingCount={upcomingCount}
+            earliestUpcomingDate={earliestUpcomingDate}
           />
         </View>
 
@@ -134,7 +151,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             <RecurringCommitmentsCard
               recurringItems={recurringItems}
               transactions={transactions}
-              currentBalance={balance}
+              currentBalance={currentHolding}
               onNavigateToRecurring={() => navigation?.navigate?.('Recurring')}
               onDeductNow={deductRecurringNow}
             />
@@ -196,7 +213,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         )}
 
         {/* ── Category Breakdown ────────────────────────── */}
-        {!hasNoData && totalExpense > 0 && (
+        {!hasNoData && realizedExpense > 0 && (
           <View
             style={styles.section}
             onLayout={(e) => setDonutY(e.nativeEvent.layout.y)}

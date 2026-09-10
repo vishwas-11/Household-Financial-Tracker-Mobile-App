@@ -17,8 +17,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { X, Camera, Image as ImageIcon, Trash2, Check, TrendingUp, AlertTriangle } from 'lucide-react-native';
+import { X, Clock, Camera, Image as ImageIcon, Trash2, Check, TrendingUp, AlertTriangle } from 'lucide-react-native';
 import { Transaction, TransactionType } from '../types';
+import { isTransactionUpcoming } from '../lib/transactionCalculations';
 import { Colors } from '../constants/colors';
 import { TRANSACTION_CATEGORIES } from '../constants/initialData';
 import { useApp } from '../context/AppContext';
@@ -468,6 +469,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
                 }
               />
 
+              {/* Informational callout if date is in the future */}
+              {isTransactionUpcoming(date) && (
+                <View style={styles.upcomingNoteCard}>
+                  <Clock size={13} color="#A5B4FC" />
+                  <Text style={styles.upcomingNoteText}>
+                    Scheduled Transaction: Because this date is in the future, this transaction will be recorded as upcoming and will not alter today's Current Holding until the selected date.
+                  </Text>
+                </View>
+              )}
+
               {/* Notes Input */}
               <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>Notes / Reference (Optional)</Text>
@@ -798,6 +809,24 @@ const styles = StyleSheet.create({
   memberChipTextActive: {
     color: Colors.brand,
     fontWeight: '700',
+  },
+  upcomingNoteCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.32)',
+    borderRadius: 10,
+    padding: 10,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  upcomingNoteText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#C7D2FE',
+    lineHeight: 16,
   },
   receiptUploadRow: {
     flexDirection: 'row',

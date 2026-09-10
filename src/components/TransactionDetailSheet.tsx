@@ -15,11 +15,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  X, ShoppingCart, Zap, CreditCard, Coffee, Home, Briefcase, FileText,
+  X,
+  Clock, ShoppingCart, Zap, CreditCard, Coffee, Home, Briefcase, FileText,
   Trash2, Paperclip, Calendar, User, Hash, ExternalLink, Maximize2,
   Repeat, CheckCircle2, Copy, Check, AlertCircle, Tag, ChevronRight, CheckCheck,
 } from 'lucide-react-native';
 import { Transaction } from '../types';
+import { isTransactionUpcoming } from '../lib/transactionCalculations';
 import { Colors } from '../constants/colors';
 import { formatCurrency } from '../lib/currency';
 import { TRANSACTION_CATEGORIES } from '../constants/initialData';
@@ -69,6 +71,7 @@ export const TransactionDetailSheet: React.FC<TransactionDetailSheetProps> = ({
 
   const isIncome = transaction.type === 'income';
   const isSavings = transaction.type === 'savings';
+  const isUpcoming = isTransactionUpcoming(transaction.fullDate);
 
   const getCategoryIcon = (category: string, size = 16) => {
     const cat = category.toLowerCase();
@@ -160,6 +163,17 @@ export const TransactionDetailSheet: React.FC<TransactionDetailSheetProps> = ({
                   <Text style={styles.heroDescription} numberOfLines={2}>{transaction.description}</Text>
                   {transaction.isRecurring && (
                     <View style={styles.recurringTag}><Repeat size={12} color={Colors.brand} /><Text style={styles.recurringTagText}>Scheduled Recurring Transfer</Text></View>
+                  )}
+                  {isUpcoming && (
+                    <View style={styles.scheduledBanner}>
+                      <View style={styles.scheduledBannerHeader}>
+                        <Clock size={13} color="#A5B4FC" />
+                        <Text style={styles.scheduledBannerTitle}>Upcoming Scheduled Entry</Text>
+                      </View>
+                      <Text style={styles.scheduledBannerSub}>
+                        This transaction is scheduled for {formattedFullDate}. It is not included in today's Current Holding and will automatically become realized on that date.
+                      </Text>
+                    </View>
                   )}
                 </View>
               </View>
@@ -341,6 +355,31 @@ const styles = StyleSheet.create({
   sectionHeaderWrap: { marginBottom: 8, marginTop: 4 },
   sectionEyebrow: { fontSize: 10, fontWeight: '700', fontFamily: 'monospace', color: Colors.textSecondary, letterSpacing: 0.8 },
   // Category edit
+  scheduledBanner: {
+    marginTop: 12,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.28)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    gap: 4,
+  },
+  scheduledBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  scheduledBannerTitle: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#C7D2FE',
+  },
+  scheduledBannerSub: {
+    fontSize: 10.5,
+    color: '#94A3B8',
+    lineHeight: 15,
+  },
   categoryEditShell: { backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.06)', padding: 2, marginBottom: 20 },
   categoryEditInner: { backgroundColor: Colors.surface, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   categoryEditLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },

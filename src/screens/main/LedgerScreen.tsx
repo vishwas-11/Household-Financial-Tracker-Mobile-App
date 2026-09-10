@@ -34,6 +34,7 @@ import { TransactionDetailSheet } from '../../components/TransactionDetailSheet'
 import { useApp } from '../../context/AppContext';
 import { Transaction, TransactionType } from '../../types';
 import { formatCurrency } from '../../lib/currency';
+import { calculateMonthMetrics, calculateBalanceMetrics } from '../../lib/transactionCalculations';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -145,29 +146,20 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
     });
   }, [transactions, isAllTime, selectedYearMonthStr]);
 
-  // Financial calculations for the selected month
-  const monthIncome = useMemo(() => {
-    return monthTransactions
-      .filter((t) => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+  // Financial calculations for the selected month (separated into realized vs upcoming)
+  const monthMetrics = useMemo(() => {
+    return calculateMonthMetrics(monthTransactions);
   }, [monthTransactions]);
 
-  const monthExpense = useMemo(() => {
-    return monthTransactions
-      .filter((t) => t.type === 'expenditure')
-      .reduce((sum, t) => sum + t.amount, 0);
-  }, [monthTransactions]);
-
-  const monthNet = monthIncome - monthExpense;
-
-  // Cumulative overall reserve across all transactions
-  const overallReserve = useMemo(() => {
-    return transactions.reduce((acc, t) => {
-      if (t.type === 'income') return acc + t.amount;
-      if (t.type === 'expenditure') return acc - t.amount;
-      return acc;
-    }, 0);
+  // Overall household balance metrics across all transactions
+  const overallBalance = useMemo(() => {
+    return calculateBalanceMetrics(transactions);
   }, [transactions]);
+
+  const monthIncome = monthMetrics.realizedIncome;
+  const monthExpense = monthMetrics.realizedExpense;
+  const monthNet = monthMetrics.realizedNet;
+  const overallReserve = overallBalance.currentHolding;
 
   // Filtered transactions (month + type + member + search)
   const filteredTransactions = useMemo(() => {
@@ -290,19 +282,21 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
           <View style={styles.balanceHeaderRow}>
             <Text style={styles.balanceLabel} numberOfLines={1}>
               {isAllTime
-                ? 'CUMULATIVE AVAILABLE FUNDS (ALL TIME)'
+                ? 'CURRENT AVAILABLE HOLDINGS (ALL TIME)'
+                : monthMetrics.upcomingCount > 0
+                ? `REALIZED CASH FLOW (${selectedMonthLabel.toUpperCase()})`
                 : `NET CASH FLOW (${selectedMonthLabel.toUpperCase()})`}
             </Text>
             {!isAllTime ? (
               monthNet < 0 ? (
                 <View style={styles.deficitPill}>
                   <AlertTriangle size={10} color={Colors.expense} />
-                  <Text style={styles.deficitPillText}>Monthly Deficit</Text>
+                  <Text style={styles.deficitPillText}>Realized Deficit</Text>
                 </View>
               ) : monthNet > 0 ? (
                 <View style={styles.surplusPill}>
                   <TrendingUp size={10} color={Colors.income} />
-                  <Text style={styles.surplusPillText}>Monthly Surplus</Text>
+                  <Text style={styles.surplusPillText}>Realized Surplus</Text>
                 </View>
               ) : null
             ) : overallReserve < 0 ? (
@@ -345,18 +339,45 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
               </Text>
               <View style={styles.summaryDot} />
               <Text style={styles.balanceSubtext}>
-                {filteredTransactions.length} records
+                {monthMetrics.realizedCount} cleared
               </Text>
             </View>
           ) : (
             <Text style={styles.balanceSubtext}>
-              {filteredTransactions.length} total records across all months
+              {overallBalance.upcomingCount > 0
+                ? `Current Holding: ${formatCurrency(overallBalance.currentHolding)} · Projected: ${formatCurrency(overallBalance.projectedBalance)}`
+                : `${filteredTransactions.length} total records across all months`}
             </Text>
+          )}
+
+          {/* Scheduled Upcoming Transactions Strip for this month */}
+          {!isAllTime && monthMetrics.upcomingCount > 0 && (
+            <View style={styles.ledgerUpcomingStrip}>
+              <View style={styles.ledgerUpcomingHeaderRow}>
+                <View style={styles.ledgerUpcomingBadge}>
+                  <Clock size={10} color="#A5B4FC" />
+                  <Text style={styles.ledgerUpcomingBadgeText}>
+                    {monthMetrics.upcomingCount} UPCOMING THIS MONTH
+                  </Text>
+                </View>
+                {monthMetrics.earliestUpcomingDate && (
+                  <Text style={styles.ledgerUpcomingDateText}>
+                    Due {monthMetrics.earliestUpcomingDate}
+                  </Text>
+                )}
+              </View>
+              <Text style={styles.ledgerUpcomingBreakdownText}>
+                {monthMetrics.upcomingIncome > 0 ? `+${formatCurrency(monthMetrics.upcomingIncome, { showDecimals: false })} Inflow · ` : ''}
+                {monthMetrics.upcomingExpense > 0 ? `-${formatCurrency(monthMetrics.upcomingExpense, { showDecimals: false })} Outflow · ` : ''}
+                Projected Net: <Text style={styles.ledgerUpcomingBoldNet}>{monthMetrics.projectedNet > 0 ? '+' : ''}{formatCurrency(monthMetrics.projectedNet)}</Text>
+              </Text>
+            </View>
           )}
 
           {!isAllTime && (
             <Text style={styles.reserveSubtext}>
-              Overall Household Reserve: {formatCurrency(overallReserve)}
+              Current Holding: {formatCurrency(overallBalance.currentHolding)}
+              {overallBalance.upcomingCount > 0 ? ` (Projected: ${formatCurrency(overallBalance.projectedBalance)})` : ''}
             </Text>
           )}
 
@@ -899,6 +920,48 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     color: Colors.textSubdued,
     marginTop: 4,
+  },
+  ledgerUpcomingStrip: {
+    marginTop: 10,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.28)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    gap: 3,
+  },
+  ledgerUpcomingHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  ledgerUpcomingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ledgerUpcomingBadgeText: {
+    fontSize: 9.5,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: '#A5B4FC',
+    letterSpacing: 0.5,
+  },
+  ledgerUpcomingDateText: {
+    fontSize: 9.5,
+    fontFamily: 'monospace',
+    fontWeight: '600',
+    color: '#C7D2FE',
+  },
+  ledgerUpcomingBreakdownText: {
+    fontSize: 10,
+    color: '#CBD5E1',
+    fontFamily: 'monospace',
+  },
+  ledgerUpcomingBoldNet: {
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   newEntryBtn: {
     flexDirection: 'row',
