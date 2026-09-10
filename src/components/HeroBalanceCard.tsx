@@ -12,6 +12,7 @@ export interface UpcomingRecurringItemPreview {
   id: string;
   title: string;
   amount: number;
+  type?: 'income' | 'expenditure' | 'savings';
   dueText: string;
   isDueToday: boolean;
   category?: string;
@@ -25,6 +26,7 @@ interface HeroBalanceCardProps {
   savingsRate: number;
   householdName?: string;
   recurringMonthlyOutflow?: number;
+  recurringMonthlyInflow?: number;
   projectedBalance?: number; // Projected month-end balance after upcoming transactions
   upcomingIncome?: number;
   upcomingExpense?: number;
@@ -41,6 +43,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
   savingsRate,
   householdName,
   recurringMonthlyOutflow = 0,
+  recurringMonthlyInflow = 0,
   projectedBalance,
   upcomingIncome = 0,
   upcomingExpense = 0,
@@ -206,9 +209,9 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             )}
 
             {/* Dedicated Recurring Commitments Strip directly under upcoming payments */}
-            {recurringMonthlyOutflow > 0 && (
+            {(recurringMonthlyOutflow > 0 || recurringMonthlyInflow > 0) && (
               <View style={[styles.recurringStrip, upcomingCount > 0 && styles.recurringStripAttached]}>
-                {/* Header: Title on left, total committed outflow on right */}
+                {/* Header: Title on left, flow summary on right */}
                 <View style={styles.recurringStripHeader}>
                   <View style={styles.recurringStripLeft}>
                     <View style={styles.recurringStripIconCircle}>
@@ -217,8 +220,12 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                     <Text style={styles.recurringStripTitle}>RECURRING COMMITMENTS</Text>
                   </View>
                   <View style={styles.recurringStripRight}>
-                    <Text style={styles.recurringStripValue}>
-                      {formatCurrency(recurringMonthlyOutflow, { showDecimals: false })}/mo
+                    <Text style={[styles.recurringStripValue, recurringMonthlyInflow > 0 && recurringMonthlyOutflow === 0 && { color: '#10B981' }]}>
+                      {recurringMonthlyInflow > 0 && recurringMonthlyOutflow > 0
+                        ? `+${formatCurrency(recurringMonthlyInflow, { showDecimals: false })} / -${formatCurrency(recurringMonthlyOutflow, { showDecimals: false })}/mo`
+                        : recurringMonthlyInflow > 0
+                        ? `+${formatCurrency(recurringMonthlyInflow, { showDecimals: false })}/mo Inflow`
+                        : `-${formatCurrency(recurringMonthlyOutflow, { showDecimals: false })}/mo Outflow`}
                     </Text>
                   </View>
                 </View>
@@ -250,8 +257,8 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                         </View>
 
                         <View style={styles.recurringItemRight}>
-                          <Text style={styles.recurringItemAmount}>
-                            -{formatCurrency(item.amount)}
+                          <Text style={[styles.recurringItemAmount, item.type === 'income' && styles.recurringItemAmountIncome]}>
+                            {item.type === 'income' ? `+${formatCurrency(item.amount)}` : `-${formatCurrency(item.amount)}`}
                           </Text>
                         </View>
                       </View>
@@ -678,6 +685,9 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     fontWeight: '700',
     color: '#F87171',
+  },
+  recurringItemAmountIncome: {
+    color: '#34D399',
   },
   projectedTargetAmount: {
     fontSize: 13,

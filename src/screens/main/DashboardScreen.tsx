@@ -94,6 +94,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         id: item.id,
         title: item.title,
         amount: item.amount,
+        type: item.type,
         dueText: info.isDueToday ? 'Due Today' : info.statusLabel,
         isDueToday: info.isDueToday,
         category: item.category,
@@ -117,6 +118,9 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   const totalRecurringExpense = (recurringItems || [])
     .filter((r) => r.type === 'expenditure')
+    .reduce((sum, r) => sum + r.amount, 0);
+  const totalRecurringIncome = (recurringItems || [])
+    .filter((r) => r.type === 'income')
     .reduce((sum, r) => sum + r.amount, 0);
   const recentTransactions = [...transactions]
     .sort((a, b) => new Date(b.fullDate).getTime() - new Date(a.fullDate).getTime())
@@ -162,6 +166,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             savingsRate={savingsRate}
             householdName={householdName}
             recurringMonthlyOutflow={totalRecurringExpense}
+            recurringMonthlyInflow={totalRecurringIncome}
             projectedBalance={projectedBalance}
             upcomingIncome={upcomingIncome}
             upcomingExpense={upcomingExpense}

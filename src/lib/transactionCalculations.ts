@@ -86,7 +86,7 @@ export function calculateBalanceMetrics(
 
   for (const item of recurringItems) {
     const info = getRecurringScheduleInfo(item, transactions, now);
-    if (!info.isSettledThisMonth && info.isUpcomingThisMonth) {
+    if (!info.isSettledThisMonth && (info.isUpcomingThisMonth || info.isDueToday)) {
       upcomingCount++;
       if (item.type === 'income') {
         upcomingIncome += item.amount;
@@ -185,7 +185,7 @@ export function calculateMonthMetrics(
 
   for (const item of recurringItems) {
     const info = getRecurringScheduleInfo(item, monthTransactions, now);
-    if (!info.isSettledThisMonth && info.isUpcomingThisMonth) {
+    if (!info.isSettledThisMonth && (info.isUpcomingThisMonth || info.isDueToday)) {
       upcomingCount++;
       if (item.type === 'income') {
         upcomingIncome += item.amount;

@@ -28,6 +28,12 @@ export const RecurringScreen: React.FC = () => {
     .filter((r) => r.type === 'expenditure')
     .reduce((sum, r) => sum + r.amount, 0);
 
+  const totalMonthlyIncome = recurringItems
+    .filter((r) => r.type === 'income')
+    .reduce((sum, r) => sum + r.amount, 0);
+
+  const netMonthlyRecurring = totalMonthlyIncome - totalMonthlyExpense;
+
   const autoPayCount = recurringItems.filter((r) => r.autoPay).length;
 
   return (
@@ -48,14 +54,34 @@ export const RecurringScreen: React.FC = () => {
           />
         }
       >
-        {/* Outflow Banner without redundant add button */}
+        {/* Recurring Net Flow Banner with Inflow & Outflow Chips */}
         <View style={styles.bannerCard}>
-          <View>
-            <Text style={styles.bannerLabel}>MONTHLY FIXED OUTFLOW</Text>
-            <Text style={styles.bannerValue}>{formatCurrency(totalMonthlyExpense)}</Text>
-            <Text style={styles.bannerSubtext}>
-              {recurringItems.length} active recurring commitments
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bannerLabel}>NET MONTHLY RECURRING FLOW</Text>
+            <Text
+              style={[
+                styles.bannerValue,
+                netMonthlyRecurring > 0 && { color: Colors.income },
+                netMonthlyRecurring < 0 && { color: Colors.expense },
+              ]}
+            >
+              {netMonthlyRecurring > 0 ? '+' : ''}{formatCurrency(netMonthlyRecurring)}
             </Text>
+            <View style={styles.bannerFlowPillsRow}>
+              <View style={styles.bannerFlowPillIncome}>
+                <Text style={styles.bannerFlowPillIncomeText}>
+                  +{formatCurrency(totalMonthlyIncome, { showDecimals: false })} Inflow
+                </Text>
+              </View>
+              <View style={styles.bannerFlowPillExpense}>
+                <Text style={styles.bannerFlowPillExpenseText}>
+                  -{formatCurrency(totalMonthlyExpense, { showDecimals: false })} Outflow
+                </Text>
+              </View>
+              <Text style={styles.bannerSubtext}>
+                {recurringItems.length} active {recurringItems.length === 1 ? 'schedule' : 'schedules'}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -74,13 +100,13 @@ export const RecurringScreen: React.FC = () => {
           </View>
 
           <View style={styles.stripCard}>
-            <View style={[styles.stripIcon, { backgroundColor: Colors.brandSubdued }]}>
-              <Repeat size={14} color={Colors.brand} />
+            <View style={[styles.stripIcon, { backgroundColor: netMonthlyRecurring >= 0 ? Colors.incomeSubdued : Colors.brandSubdued }]}>
+              <Repeat size={14} color={netMonthlyRecurring >= 0 ? Colors.income : Colors.brand} />
             </View>
             <View>
-              <Text style={styles.stripLabel}>FIXED OBLIGATIONS</Text>
-              <Text style={styles.stripValue}>
-                {formatCurrency(totalMonthlyExpense, { showDecimals: false })}/mo
+              <Text style={styles.stripLabel}>NET RECURRING / MO</Text>
+              <Text style={[styles.stripValue, netMonthlyRecurring > 0 && { color: Colors.income }, netMonthlyRecurring < 0 && { color: Colors.expense }]}>
+                {netMonthlyRecurring > 0 ? '+' : ''}{formatCurrency(netMonthlyRecurring, { showDecimals: false })}/mo
               </Text>
             </View>
           </View>
@@ -193,6 +219,41 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     marginVertical: 4,
     fontFamily: 'monospace',
+  },
+  bannerFlowPillsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  bannerFlowPillIncome: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.28)',
+  },
+  bannerFlowPillIncomeText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: Colors.income,
+  },
+  bannerFlowPillExpense: {
+    backgroundColor: 'rgba(244, 63, 94, 0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(244, 63, 94, 0.28)',
+  },
+  bannerFlowPillExpenseText: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: Colors.expense,
   },
   bannerSubtext: {
     fontSize: 11,

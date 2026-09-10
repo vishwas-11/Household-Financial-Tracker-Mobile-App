@@ -24,22 +24,34 @@ export const RecurringCommitmentsCard: React.FC<RecurringCommitmentsCardProps> =
     return null;
   }
 
-  // Calculate monthly total and pending amounts
-  const totalMonthlyCommitment = recurringItems
+  // Calculate monthly inflow, outflow, and net
+  const totalMonthlyIncome = recurringItems
+    .filter((r) => r.type === 'income')
+    .reduce((sum, r) => sum + r.amount, 0);
+
+  const totalMonthlyExpense = recurringItems
     .filter((r) => r.type === 'expenditure')
     .reduce((sum, r) => sum + r.amount, 0);
+
+  const netMonthlyRecurring = totalMonthlyIncome - totalMonthlyExpense;
 
   const pendingRecurringItems = recurringItems.filter((r) => {
     const info = getRecurringScheduleInfo(r, transactions);
     return !info.isSettledThisMonth;
   });
 
-  const pendingAmount = pendingRecurringItems
+  const pendingIncome = pendingRecurringItems
+    .filter((r) => r.type === 'income')
+    .reduce((sum, r) => sum + r.amount, 0);
+
+  const pendingExpense = pendingRecurringItems
     .filter((r) => r.type === 'expenditure')
     .reduce((sum, r) => sum + r.amount, 0);
 
-  // Free cash flow forecast: current realized cash minus pending commitments
-  const forecastedFreeCash = currentBalance - pendingAmount;
+  const netPending = pendingIncome - pendingExpense;
+
+  // Free cash flow forecast: current realized cash + pending income - pending commitments
+  const forecastedFreeCash = currentBalance + netPending;
 
   // Sort: unsettled and due soonest first, then settled
   const sortedItems = useMemo(() => {
@@ -95,18 +107,36 @@ export const RecurringCommitmentsCard: React.FC<RecurringCommitmentsCardProps> =
       {/* Financial Metrics Strip */}
       <View style={styles.metricsBanner}>
         <View style={styles.metricCol}>
-          <Text style={styles.metricLabel}>COMMITTED/MO</Text>
-          <Text style={styles.metricValue}>
-            {formatCurrency(totalMonthlyCommitment, { showDecimals: false })}
+          <Text style={styles.metricLabel}>NET RECURRING/MO</Text>
+          <Text
+            style={[
+              styles.metricValue,
+              netMonthlyRecurring > 0 && styles.metricValueIncome,
+              netMonthlyRecurring < 0 && styles.metricValueDeficit,
+            ]}
+          >
+            {netMonthlyRecurring > 0 ? '+' : ''}{formatCurrency(netMonthlyRecurring, { showDecimals: false })}
+          </Text>
+          <Text style={styles.metricSubtext}>
+            +{formatCurrency(totalMonthlyIncome, { showDecimals: false })} · -{formatCurrency(totalMonthlyExpense, { showDecimals: false })}
           </Text>
         </View>
 
         <View style={styles.metricDivider} />
 
         <View style={styles.metricCol}>
-          <Text style={styles.metricLabel}>PENDING THIS CYCLE</Text>
-          <Text style={styles.metricValue}>
-            {formatCurrency(pendingAmount, { showDecimals: false })}
+          <Text style={styles.metricLabel}>PENDING CYCLE</Text>
+          <Text
+            style={[
+              styles.metricValue,
+              netPending > 0 && styles.metricValueIncome,
+              netPending < 0 && styles.metricValueDeficit,
+            ]}
+          >
+            {netPending > 0 ? '+' : ''}{formatCurrency(netPending, { showDecimals: false })}
+          </Text>
+          <Text style={styles.metricSubtext}>
+            +{formatCurrency(pendingIncome, { showDecimals: false })} · -{formatCurrency(pendingExpense, { showDecimals: false })}
           </Text>
         </View>
 
@@ -114,8 +144,16 @@ export const RecurringCommitmentsCard: React.FC<RecurringCommitmentsCardProps> =
 
         <View style={styles.metricCol}>
           <Text style={styles.metricLabel}>PROJECTED FREE CASH</Text>
-          <Text style={[styles.metricValue, forecastedFreeCash < 0 && styles.metricValueDeficit]}>
+          <Text
+            style={[
+              styles.metricValue,
+              forecastedFreeCash < 0 && styles.metricValueDeficit,
+            ]}
+          >
             {formatCurrency(forecastedFreeCash, { showDecimals: false })}
+          </Text>
+          <Text style={styles.metricSubtext}>
+            Holding {netPending >= 0 ? '+' : ''}{formatCurrency(netPending, { showDecimals: false })}
           </Text>
         </View>
       </View>
@@ -149,9 +187,14 @@ export const RecurringCommitmentsCard: React.FC<RecurringCommitmentsCardProps> =
               </View>
 
               <View style={styles.itemRight}>
-                <Text style={styles.itemAmount}>
-                  -{formatCurrency(item.amount)}
+                <Text style={[styles.itemAmount, item.type === 'income' && styles.itemAmountIncome]}>
+                  {item.type === 'income' ? `+${formatCurrency(item.amount)}` : `-${formatCurrency(item.amount)}`}
                 </Text>
+                <View style={[styles.typeBadge, item.type === 'income' ? styles.typeBadgeIncome : styles.typeBadgeExpense]}>
+                  <Text style={[styles.typeBadgeText, item.type === 'income' ? styles.typeBadgeTextIncome : styles.typeBadgeTextExpense]}>
+                    {item.type === 'income' ? 'INFLOW' : 'OUTFLOW'}
+                  </Text>
+                </View>
               </View>
             </View>
           );
@@ -281,6 +324,41 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   metricValueDeficit: {
+    color: Colors.expense,
+  },
+  metricValueIncome: {
+    color: Colors.income,
+  },
+  metricSubtext: {
+    fontSize: 8.5,
+    fontFamily: 'monospace',
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  itemAmountIncome: {
+    color: Colors.income,
+  },
+  typeBadge: {
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+    marginTop: 2,
+  },
+  typeBadgeIncome: {
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+  },
+  typeBadgeExpense: {
+    backgroundColor: 'rgba(244, 63, 94, 0.12)',
+  },
+  typeBadgeText: {
+    fontSize: 8,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+  },
+  typeBadgeTextIncome: {
+    color: Colors.income,
+  },
+  typeBadgeTextExpense: {
     color: Colors.expense,
   },
   metricDivider: {
