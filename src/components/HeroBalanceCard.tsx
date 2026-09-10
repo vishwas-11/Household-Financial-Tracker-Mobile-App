@@ -101,7 +101,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             style={[styles.metallicDiagonalStreakSecondary, { pointerEvents: 'none' }]}
           />
 
-          {/* Card Header: Household Identity & Status */}
+          {/* Card Header: Financial Ledger Status */}
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
               <LinearGradient
@@ -112,8 +112,8 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
               >
                 <Wallet size={14} color="#CBD5E1" />
               </LinearGradient>
-              <Text style={styles.householdLabel} numberOfLines={1}>
-                {householdName || 'Household Ledger'}
+              <Text style={styles.cardHeaderTitle} numberOfLines={1}>
+                HOUSEHOLD LEDGER
               </Text>
             </View>
 
@@ -338,27 +338,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 10,
   },
   walletIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(203, 213, 225, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  householdLabel: {
-    fontSize: 13.5,
-    fontWeight: '600',
-    color: '#F8FAFC',
-    letterSpacing: 0.1,
-    maxWidth: 160,
+  cardHeaderTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#CBD5E1',
+    letterSpacing: 0.8,
+    fontFamily: 'monospace',
   },
   headerRightBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
   savingsRateBadge: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
-﻿// src/components/RecurringCommitmentsCard.tsx
-import React, { useState } from 'react';
+// src/components/RecurringCommitmentsCard.tsx
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Repeat, ChevronRight, CheckCircle2, Clock, Zap } from 'lucide-react-native';
+import { Repeat, ChevronRight, CheckCircle2, Clock, Zap, ArrowRight } from 'lucide-react-native';
 import { Colors } from '../constants/colors';
 import { RecurringItem, Transaction } from '../types';
 import { formatCurrency } from '../lib/currency';
@@ -44,6 +44,29 @@ export const RecurringCommitmentsCard: React.FC<RecurringCommitmentsCardProps> =
 
   const forecastedFreeCash = currentBalance - pendingAmount;
 
+  // Sort items: unsettled first, due today/soonest first
+  const sortedItems = useMemo(() => {
+    return [...recurringItems].sort((a, b) => {
+      const infoA = getRecurringScheduleInfo(a, transactions);
+      const infoB = getRecurringScheduleInfo(b, transactions);
+
+      // Unsettled items come before settled items
+      if (infoA.isSettledThisMonth !== infoB.isSettledThisMonth) {
+        return infoA.isSettledThisMonth ? 1 : -1;
+      }
+      // Due today comes first
+      if (infoA.isDueToday !== infoB.isDueToday) {
+        return infoA.isDueToday ? -1 : 1;
+      }
+      // Soonest days remaining
+      return infoA.daysRemaining - infoB.daysRemaining;
+    });
+  }, [recurringItems, transactions]);
+
+  // Display top 1-2 most imminent upcoming bills to prevent dashboard clutter
+  const displayedItems = sortedItems.slice(0, 2);
+  const remainingCount = recurringItems.length - displayedItems.length;
+
   const handleDeduct = async (item: RecurringItem) => {
     if (!onDeductNow || processingId) return;
     setProcessingId(item.id);
@@ -64,14 +87,16 @@ export const RecurringCommitmentsCard: React.FC<RecurringCommitmentsCardProps> =
           </View>
           <View style={styles.headerTextWrap}>
             <View style={styles.eyebrowRow}>
-              <Text style={styles.eyebrow}>AUTOMATED SCHEDULES</Text>
+              <Text style={styles.eyebrow}>AUTOMATED OBLIGATIONS</Text>
               <View style={styles.pillBadge}>
-                <Text style={styles.pillBadgeText}>DUE-DATE DEDUCTION</Text>
+                <Text style={styles.pillBadgeText}>{recurringItems.length} ACTIVE</Text>
               </View>
             </View>
-            <Text style={styles.title}>Scheduled Recurring Bills</Text>
+            <Text style={styles.title}>Upcoming Recurring Bills</Text>
             <Text style={styles.subtitle}>
-              Committed auto-pay obligations deducted when their due cycle arrives
+              {recurringItems.length > 2
+                ? `Showing next ${displayedItems.length} obligations due soonest this cycle`
+                : `Committed obligations deducted when their due cycle arrives`}
             </Text>
           </View>
         </View>
@@ -105,9 +130,9 @@ export const RecurringCommitmentsCard: React.FC<RecurringCommitmentsCardProps> =
         </View>
       </View>
 
-      {/* Scheduled Items List */}
+      {/* Scheduled Items List (Top 1-2 Due Soonest) */}
       <View style={styles.itemsList}>
-        {recurringItems.map((item) => {
+        {displayedItems.map((item) => {
           const info = getRecurringScheduleInfo(item, transactions);
           const isProcessing = processingId === item.id;
 
@@ -116,7 +141,7 @@ export const RecurringCommitmentsCard: React.FC<RecurringCommitmentsCardProps> =
               <View style={styles.itemLeft}>
                 <Text style={styles.itemTitle}>{item.title}</Text>
                 <View style={styles.itemMetaRow}>
-                  <Text style={styles.itemCategory}>{item.category}</Text>
+                  <Text style={styles.itemCategory}>{item.category} • {item.frequency}</Text>
                   <View style={styles.dot} />
                   {info.isSettledThisMonth ? (
                     <View style={styles.settledBadge}>
@@ -161,6 +186,23 @@ export const RecurringCommitmentsCard: React.FC<RecurringCommitmentsCardProps> =
           );
         })}
       </View>
+
+      {/* View All In Recurring Tab CTA */}
+      {remainingCount > 0 && onNavigateToRecurring && (
+        <TouchableOpacity
+          style={styles.viewAllCommitmentsBtn}
+          onPress={onNavigateToRecurring}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.viewAllCommitmentsText}>
+            +{remainingCount} more recurring {remainingCount === 1 ? 'commitment' : 'commitments'} scheduled
+          </Text>
+          <View style={styles.viewAllRight}>
+            <Text style={styles.viewAllActionText}>View in Recurring</Text>
+            <ChevronRight size={13} color={Colors.brand} />
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -377,6 +419,33 @@ const styles = StyleSheet.create({
   },
   deductNowText: {
     fontSize: 9.5,
+    fontWeight: '700',
+    color: Colors.brand,
+  },
+  viewAllCommitmentsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginTop: 10,
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.22)',
+    borderRadius: 10,
+  },
+  viewAllCommitmentsText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  viewAllRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewAllActionText: {
+    fontSize: 11.5,
     fontWeight: '700',
     color: Colors.brand,
   },
