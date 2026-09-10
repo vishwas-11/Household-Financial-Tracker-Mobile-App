@@ -101,21 +101,16 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             style={[styles.metallicDiagonalStreakSecondary, { pointerEvents: 'none' }]}
           />
 
-          {/* Card Header: Financial Ledger Status */}
+          {/* Card Header: Wallet icon on left, status badges on right */}
           <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              <LinearGradient
-                colors={['#2D3342', '#181B22']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.walletIcon}
-              >
-                <Wallet size={14} color="#CBD5E1" />
-              </LinearGradient>
-              <Text style={styles.cardHeaderTitle} numberOfLines={1}>
-                HOUSEHOLD LEDGER
-              </Text>
-            </View>
+            <LinearGradient
+              colors={['#2D3342', '#181B22']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.walletIcon}
+            >
+              <Wallet size={14} color="#CBD5E1" />
+            </LinearGradient>
 
             <View style={styles.headerRightBadgeRow}>
               <View style={styles.savingsRateBadge}>
@@ -140,14 +135,6 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                 <View style={styles.liveHoldingDot} />
                 <Text style={styles.balanceLabel}>CURRENT HOLDING</Text>
               </View>
-              {recurringMonthlyOutflow > 0 && (
-                <View style={styles.recurringChip}>
-                  <Repeat size={9.5} color="#A5B4FC" />
-                  <Text style={styles.recurringChipText}>
-                    {formatCurrency(recurringMonthlyOutflow, { showDecimals: false })}/mo recurring
-                  </Text>
-                </View>
-              )}
             </View>
             <AnimatedCounter
               value={balance}
@@ -200,6 +187,23 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
                       {formatCurrency(projectedBalance)}
                     </Text>
                   </View>
+                </View>
+              </View>
+            )}
+
+            {/* Dedicated Recurring Commitments Strip directly under upcoming payments */}
+            {recurringMonthlyOutflow > 0 && (
+              <View style={[styles.recurringStrip, upcomingCount > 0 && styles.recurringStripAttached]}>
+                <View style={styles.recurringStripLeft}>
+                  <View style={styles.recurringStripIconCircle}>
+                    <Repeat size={10.5} color="#A5B4FC" />
+                  </View>
+                  <Text style={styles.recurringStripTitle}>RECURRING COMMITMENTS</Text>
+                </View>
+                <View style={styles.recurringStripRight}>
+                  <Text style={styles.recurringStripValue}>
+                    {formatCurrency(recurringMonthlyOutflow, { showDecimals: false })}/mo
+                  </Text>
                 </View>
               </View>
             )}
@@ -338,9 +342,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 9,
-    flex: 1,
-    minWidth: 0,
-    marginRight: 10,
   },
   walletIcon: {
     width: 28,
@@ -350,13 +351,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(203, 213, 225, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cardHeaderTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#CBD5E1',
-    letterSpacing: 0.8,
-    fontFamily: 'monospace',
   },
   headerRightBadgeRow: {
     flexDirection: 'row',
@@ -538,6 +532,51 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     fontWeight: '500',
     marginBottom: 1,
+  },
+  recurringStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.22)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 7.5,
+    marginTop: 10,
+  },
+  recurringStripAttached: {
+    marginTop: 6,
+  },
+  recurringStripLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  recurringStripIconCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    backgroundColor: 'rgba(99, 102, 241, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recurringStripTitle: {
+    fontSize: 9.5,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: '#CBD5E1',
+    letterSpacing: 0.6,
+  },
+  recurringStripRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  recurringStripValue: {
+    fontSize: 11.5,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: '#A5B4FC',
   },
   projectedTargetAmount: {
     fontSize: 13,
