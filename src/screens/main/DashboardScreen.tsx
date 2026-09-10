@@ -187,7 +187,6 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               transactions={transactions}
               currentBalance={currentHolding}
               onNavigateToRecurring={() => navigation?.navigate?.('Recurring')}
-              onDeductNow={deductRecurringNow}
             />
           </View>
         )}

@@ -95,6 +95,8 @@ export const RecurringScreen: React.FC = () => {
                 <RecurringItemRow
                   key={item.id}
                   item={item}
+                  transactions={transactions}
+                  onDeductNow={deductRecurringNow}
                   onDelete={deleteRecurring}
                 />
               ))}
