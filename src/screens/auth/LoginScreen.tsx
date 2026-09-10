@@ -1,12 +1,29 @@
-﻿// src/screens/auth/LoginScreen.tsx
+// src/screens/auth/LoginScreen.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Animated,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck, AlertCircle, Zap } from 'lucide-react-native';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
+  AlertCircle,
+  Zap,
+} from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { HouseholdFundsLogo } from '../../components/HouseholdFundsLogo';
 import { useApp } from '../../context/AppContext';
@@ -20,6 +37,8 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  const passwordInputRef = useRef<TextInput>(null);
 
   const logoAnim = useRef(new Animated.Value(0)).current;
   const cardAnim = useRef(new Animated.Value(40)).current;
@@ -36,24 +55,35 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   }, []);
 
   const handleSignIn = async () => {
-    if (!email.trim() || !password) { setError('Please enter your email and password.'); return; }
+    if (!email.trim() || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
     setError(null);
     setLoading(true);
     const res = await login(email, password);
     setLoading(false);
-    if (!res.success) { setError(res.error || 'Invalid credentials.'); }
+    if (!res.success) setError(res.error || 'Invalid credentials.');
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
+          showsVerticalScrollIndicator={false}
+        >
           {/* Brand Hero */}
           <Animated.View style={[styles.hero, { opacity: logoAnim }]}>
             <LinearGradient
               colors={['#3B5BDB', '#1971C2', '#0C8599'] as [string, string, ...string[]]}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={styles.logoGradient}
             >
               <HouseholdFundsLogo size={26} color={Colors.white} />
@@ -90,7 +120,11 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>EMAIL</Text>
               <View style={[styles.inputWrapper, focusedField === 'email' && styles.inputWrapperFocused]}>
-                <Mail size={16} color={focusedField === 'email' ? Colors.brand : Colors.textSubdued} style={{ marginRight: 10 }} />
+                <Mail
+                  size={16}
+                  color={focusedField === 'email' ? Colors.brand : Colors.textSubdued}
+                  style={{ marginRight: 10 }}
+                />
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
@@ -98,6 +132,10 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                   placeholderTextColor={Colors.textSubdued}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => passwordInputRef.current?.focus()}
                   style={styles.input}
                   onFocus={() => setFocusedField('email')}
                   onBlur={() => setFocusedField(null)}
@@ -109,13 +147,22 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>PASSWORD</Text>
               <View style={[styles.inputWrapper, focusedField === 'password' && styles.inputWrapperFocused]}>
-                <Lock size={16} color={focusedField === 'password' ? Colors.brand : Colors.textSubdued} style={{ marginRight: 10 }} />
+                <Lock
+                  size={16}
+                  color={focusedField === 'password' ? Colors.brand : Colors.textSubdued}
+                  style={{ marginRight: 10 }}
+                />
                 <TextInput
+                  ref={passwordInputRef}
                   value={password}
                   onChangeText={setPassword}
                   placeholder="Enter password"
                   placeholderTextColor={Colors.textSubdued}
                   secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSignIn}
                   style={[styles.input, { flex: 1 }]}
                   onFocus={() => setFocusedField('password')}
                   onBlur={() => setFocusedField(null)}
@@ -135,7 +182,8 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             >
               <LinearGradient
                 colors={(loading ? [Colors.surfaceHighlight, Colors.surfaceHighlight] : ['#3B5BDB', '#0C8599']) as [string, string, ...string[]]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
                 style={styles.submitBtn}
               >
                 {loading ? (
@@ -169,10 +217,10 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 22, paddingTop: 40 },
+  scrollContent: { flexGrow: 1, padding: 22, paddingTop: 36, paddingBottom: 40 },
 
   // Hero
-  hero: { alignItems: 'center', marginBottom: 32 },
+  hero: { alignItems: 'center', marginBottom: 28 },
   logoGradient: { width: 60, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 16, shadowColor: '#3B5BDB', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 12 },
   appTitle: { fontSize: 26, fontWeight: '800', color: Colors.text, letterSpacing: -0.6, marginBottom: 6 },
   appSubtitle: { fontSize: 13, color: Colors.textMuted, marginBottom: 14, textAlign: 'center' },
@@ -209,4 +257,3 @@ const styles = StyleSheet.create({
   securityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 20 },
   securityText: { fontSize: 10.5, fontFamily: 'monospace', color: Colors.textSubdued },
 });
-
