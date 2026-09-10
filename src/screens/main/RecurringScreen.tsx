@@ -1,4 +1,4 @@
-﻿// src/screens/main/RecurringScreen.tsx
+// src/screens/main/RecurringScreen.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -46,7 +46,7 @@ export const RecurringScreen: React.FC = () => {
           />
         }
       >
-        {/* Outflow Banner */}
+        {/* Outflow Banner without redundant add button */}
         <View style={styles.bannerCard}>
           <View>
             <Text style={styles.bannerLabel}>MONTHLY FIXED OUTFLOW</Text>
@@ -55,14 +55,6 @@ export const RecurringScreen: React.FC = () => {
               {recurringItems.length} active recurring commitments
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.newScheduleBtn}
-            onPress={() => setIsAddModalOpen(true)}
-            activeOpacity={0.8}
-          >
-            <Plus size={14} color={Colors.white} />
-            <Text style={styles.newScheduleBtnText}>New Schedule</Text>
-          </TouchableOpacity>
         </View>
 
         {/* Protection / Stat Strip */}
@@ -92,19 +84,30 @@ export const RecurringScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* List of Schedules or Empty State */}
+        {/* List of Schedules or Dedicated Action Card */}
         <View style={styles.listSection}>
           <Text style={styles.sectionTitle}>
             Active Scheduled Items ({recurringItems.length})
           </Text>
           {recurringItems.length > 0 ? (
-            recurringItems.map((item) => (
-              <RecurringItemRow
-                key={item.id}
-                item={item}
-                onDelete={deleteRecurring}
-              />
-            ))
+            <>
+              {recurringItems.map((item) => (
+                <RecurringItemRow
+                  key={item.id}
+                  item={item}
+                  onDelete={deleteRecurring}
+                />
+              ))}
+
+              <TouchableOpacity
+                onPress={() => setIsAddModalOpen(true)}
+                style={styles.addMoreBtn}
+                activeOpacity={0.7}
+              >
+                <Plus size={13} color={Colors.white} />
+                <Text style={styles.addMoreBtnText}>Schedule your Recurring payment</Text>
+              </TouchableOpacity>
+            </>
           ) : (
             <View style={styles.emptyRecurringCard}>
               <View style={styles.emptyIconBadge}>
@@ -117,11 +120,19 @@ export const RecurringScreen: React.FC = () => {
               <TouchableOpacity
                 onPress={() => setIsAddModalOpen(true)}
                 style={styles.emptyAddBtn}
-                activeOpacity={0.7}
+                activeOpacity={0.8}
               >
-                <Plus size={13} color={Colors.white} />
-                <Text style={styles.emptyAddBtnText}>Schedule Your First Bill</Text>
+                <Plus size={14} color={Colors.white} />
+                <Text style={styles.emptyAddBtnText}>Schedule your Recurring payment</Text>
               </TouchableOpacity>
+
+              {/* Informative description below the button inside the card */}
+              <View style={styles.infoNoteBox}>
+                <ShieldCheck size={14} color="#A5B4FC" style={styles.infoNoteIcon} />
+                <Text style={styles.infoNoteText}>
+                  How it works: Once scheduled, your commitment is automatically tracked each month. It forecasts in your Dashboard's upcoming balance and deducts on its due date so you always know your true cash-on-hand.
+                </Text>
+              </View>
             </View>
           )}
         </View>
@@ -178,20 +189,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.textMuted,
   },
-  newScheduleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: Colors.brand,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  newScheduleBtnText: {
-    color: Colors.white,
-    fontSize: 12.5,
-    fontWeight: '700',
-  },
   statStrip: {
     gap: 8,
     marginBottom: 16,
@@ -240,7 +237,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 18,
-    paddingVertical: 44,
+    paddingVertical: 36,
     paddingHorizontal: 20,
     alignItems: 'center',
     justifyContent: 'center',
@@ -271,16 +268,52 @@ const styles = StyleSheet.create({
   emptyAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 7,
     backgroundColor: Colors.brand,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: 18,
   },
   emptyAddBtnText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  infoNoteBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.22)',
+    borderRadius: 10,
+    padding: 12,
+    maxWidth: 320,
+  },
+  infoNoteIcon: {
+    marginTop: 1,
+  },
+  infoNoteText: {
+    flex: 1,
+    fontSize: 10.5,
+    color: '#94A3B8',
+    lineHeight: 15.5,
+  },
+  addMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: Colors.brand,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginTop: 14,
+  },
+  addMoreBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
     color: Colors.white,
   },
 });
-
