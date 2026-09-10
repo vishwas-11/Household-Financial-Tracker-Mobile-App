@@ -25,6 +25,7 @@ import {
   AlertCircle,
   Check,
   Circle,
+  KeyRound,
 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { HouseholdFundsLogo } from '../../components/HouseholdFundsLogo';
@@ -54,7 +55,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     ]).start();
   }, []);
 
-  // Compute real-time password strength metrics
+  // Compute real-time password strength metrics (Strict 5-point policy)
   const passwordStats = useMemo(() => {
     const hasMinLength = password.length >= 8;
     const hasUppercase = /[A-Z]/.test(password);
@@ -69,20 +70,22 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     if (hasNumber) score++;
     if (hasSpecial) score++;
 
-    let label = 'Very Weak';
-    let color = Colors.expense;
-    if (score >= 5) {
-      label = 'Strong';
-      color = '#10b981';
-    } else if (score >= 4) {
-      label = 'Good';
-      color = '#38d9a9';
-    } else if (score >= 3) {
-      label = 'Fair';
-      color = '#f59f00';
-    } else if (score >= 1) {
-      label = 'Weak';
-      color = Colors.expense;
+    let label = 'Required';
+    let color = Colors.textSubdued;
+    if (password.length > 0) {
+      if (score >= 5) {
+        label = 'Strong & Ready';
+        color = '#10b981';
+      } else if (score >= 4) {
+        label = 'Good';
+        color = '#20c997';
+      } else if (score >= 3) {
+        label = 'Fair';
+        color = '#f59f00';
+      } else {
+        label = 'Weak';
+        color = Colors.expense;
+      }
     }
 
     return {
@@ -100,12 +103,19 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const handleSignUp = async () => {
     if (!name.trim() || !email.trim() || !password) {
-      setError('Please fill in all fields.');
+      setError('Please fill in your name, email, and password.');
       return;
     }
 
     if (!passwordStats.isValid) {
-      setError('Password must meet all 5 security requirements below.');
+      const missing: string[] = [];
+      if (!passwordStats.hasMinLength) missing.push('8+ characters');
+      if (!passwordStats.hasUppercase) missing.push('an uppercase letter (A-Z)');
+      if (!passwordStats.hasLowercase) missing.push('a lowercase letter (a-z)');
+      if (!passwordStats.hasNumber) missing.push('a number (0-9)');
+      if (!passwordStats.hasSpecial) missing.push('a special character (!@#$%^&*)');
+
+      setError(`Password must satisfy all 5 requirements. Missing: ${missing.join(', ')}.`);
       return;
     }
 
@@ -222,7 +232,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                   ref={passwordInputRef}
                   value={password}
                   onChangeText={setPassword}
-                  placeholder="Choose a strong password"
+                  placeholder="Create a strong password"
                   placeholderTextColor={Colors.textSubdued}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
@@ -238,118 +248,161 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
 
-              {/* Real-time Password Strength Meter */}
-              {(password.length > 0 || focusedField === 'password') && (
-                <View style={styles.strengthContainer}>
-                  <View style={styles.strengthHeader}>
-                    <Text style={styles.strengthTitle}>PASSWORD STRENGTH</Text>
-                    <Text style={[styles.strengthLabel, { color: passwordStats.color }]}>
-                      {passwordStats.label}
-                    </Text>
+              {/* ALWAYS VISIBLE Password Strength Meter & Interactive Checklist */}
+              <View style={styles.strengthContainer}>
+                <View style={styles.strengthHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <KeyRound size={12} color={Colors.textMuted} />
+                    <Text style={styles.strengthTitle}>SECURITY REQUIREMENTS</Text>
                   </View>
+                  <Text style={[styles.strengthLabel, { color: passwordStats.color }]}>
+                    {passwordStats.label}
+                  </Text>
+                </View>
 
-                  {/* 5-part Segmented Progress Bar */}
-                  <View style={styles.strengthBarsRow}>
-                    {[1, 2, 3, 4, 5].map((idx) => (
+                {/* 5-part Segmented Progress Bar */}
+                <View style={styles.strengthBarsRow}>
+                  {[1, 2, 3, 4, 5].map((idx) => {
+                    const isFilled = password.length > 0 && passwordStats.score >= idx;
+                    return (
                       <View
                         key={idx}
                         style={[
                           styles.strengthSegment,
                           {
-                            backgroundColor:
-                              passwordStats.score >= idx
-                                ? passwordStats.color
-                                : 'rgba(255,255,255,0.08)',
+                            backgroundColor: isFilled
+                              ? passwordStats.color
+                              : 'rgba(255,255,255,0.07)',
                           },
                         ]}
                       />
-                    ))}
+                    );
+                  })}
+                </View>
+
+                {/* 5 Requirements Checklist */}
+                <View style={styles.criteriaContainer}>
+                  {/* 1. Min 8 Chars */}
+                  <View style={styles.criterionItem}>
+                    <View
+                      style={[
+                        styles.criterionBadge,
+                        passwordStats.hasMinLength && styles.criterionBadgeMet,
+                      ]}
+                    >
+                      {passwordStats.hasMinLength ? (
+                        <Check size={11} color="#10b981" strokeWidth={3} />
+                      ) : (
+                        <Circle size={6} color="rgba(255,255,255,0.3)" fill="rgba(255,255,255,0.3)" />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.criterionText,
+                        passwordStats.hasMinLength && styles.criterionTextMet,
+                      ]}
+                    >
+                      At least 8 characters
+                    </Text>
                   </View>
 
-                  {/* Requirements Checklist */}
-                  <View style={styles.criteriaContainer}>
-                    <View style={styles.criterionItem}>
-                      {passwordStats.hasMinLength ? (
-                        <Check size={12} color="#10b981" strokeWidth={2.5} />
-                      ) : (
-                        <Circle size={6} color="rgba(255,255,255,0.3)" fill="rgba(255,255,255,0.3)" />
-                      )}
-                      <Text
-                        style={[
-                          styles.criterionText,
-                          passwordStats.hasMinLength && styles.criterionTextMet,
-                        ]}
-                      >
-                        At least 8 characters
-                      </Text>
-                    </View>
-
-                    <View style={styles.criterionItem}>
+                  {/* 2. Uppercase */}
+                  <View style={styles.criterionItem}>
+                    <View
+                      style={[
+                        styles.criterionBadge,
+                        passwordStats.hasUppercase && styles.criterionBadgeMet,
+                      ]}
+                    >
                       {passwordStats.hasUppercase ? (
-                        <Check size={12} color="#10b981" strokeWidth={2.5} />
+                        <Check size={11} color="#10b981" strokeWidth={3} />
                       ) : (
                         <Circle size={6} color="rgba(255,255,255,0.3)" fill="rgba(255,255,255,0.3)" />
                       )}
-                      <Text
-                        style={[
-                          styles.criterionText,
-                          passwordStats.hasUppercase && styles.criterionTextMet,
-                        ]}
-                      >
-                        One uppercase letter (A-Z)
-                      </Text>
                     </View>
+                    <Text
+                      style={[
+                        styles.criterionText,
+                        passwordStats.hasUppercase && styles.criterionTextMet,
+                      ]}
+                    >
+                      One uppercase letter (A-Z)
+                    </Text>
+                  </View>
 
-                    <View style={styles.criterionItem}>
+                  {/* 3. Lowercase */}
+                  <View style={styles.criterionItem}>
+                    <View
+                      style={[
+                        styles.criterionBadge,
+                        passwordStats.hasLowercase && styles.criterionBadgeMet,
+                      ]}
+                    >
                       {passwordStats.hasLowercase ? (
-                        <Check size={12} color="#10b981" strokeWidth={2.5} />
+                        <Check size={11} color="#10b981" strokeWidth={3} />
                       ) : (
                         <Circle size={6} color="rgba(255,255,255,0.3)" fill="rgba(255,255,255,0.3)" />
                       )}
-                      <Text
-                        style={[
-                          styles.criterionText,
-                          passwordStats.hasLowercase && styles.criterionTextMet,
-                        ]}
-                      >
-                        One lowercase letter (a-z)
-                      </Text>
                     </View>
+                    <Text
+                      style={[
+                        styles.criterionText,
+                        passwordStats.hasLowercase && styles.criterionTextMet,
+                      ]}
+                    >
+                      One lowercase letter (a-z)
+                    </Text>
+                  </View>
 
-                    <View style={styles.criterionItem}>
+                  {/* 4. Number */}
+                  <View style={styles.criterionItem}>
+                    <View
+                      style={[
+                        styles.criterionBadge,
+                        passwordStats.hasNumber && styles.criterionBadgeMet,
+                      ]}
+                    >
                       {passwordStats.hasNumber ? (
-                        <Check size={12} color="#10b981" strokeWidth={2.5} />
+                        <Check size={11} color="#10b981" strokeWidth={3} />
                       ) : (
                         <Circle size={6} color="rgba(255,255,255,0.3)" fill="rgba(255,255,255,0.3)" />
                       )}
-                      <Text
-                        style={[
-                          styles.criterionText,
-                          passwordStats.hasNumber && styles.criterionTextMet,
-                        ]}
-                      >
-                        At least one number (0-9)
-                      </Text>
                     </View>
+                    <Text
+                      style={[
+                        styles.criterionText,
+                        passwordStats.hasNumber && styles.criterionTextMet,
+                      ]}
+                    >
+                      At least one number (0-9)
+                    </Text>
+                  </View>
 
-                    <View style={styles.criterionItem}>
+                  {/* 5. Special symbol */}
+                  <View style={styles.criterionItem}>
+                    <View
+                      style={[
+                        styles.criterionBadge,
+                        passwordStats.hasSpecial && styles.criterionBadgeMet,
+                      ]}
+                    >
                       {passwordStats.hasSpecial ? (
-                        <Check size={12} color="#10b981" strokeWidth={2.5} />
+                        <Check size={11} color="#10b981" strokeWidth={3} />
                       ) : (
                         <Circle size={6} color="rgba(255,255,255,0.3)" fill="rgba(255,255,255,0.3)" />
                       )}
-                      <Text
-                        style={[
-                          styles.criterionText,
-                          passwordStats.hasSpecial && styles.criterionTextMet,
-                        ]}
-                      >
-                        One special symbol (!@#$%^&*)
-                      </Text>
                     </View>
+                    <Text
+                      style={[
+                        styles.criterionText,
+                        passwordStats.hasSpecial && styles.criterionTextMet,
+                      ]}
+                    >
+                      One special character (!@#$%^&*)
+                    </Text>
                   </View>
                 </View>
-              )}
+              </View>
             </View>
 
             {/* Submit */}
@@ -357,26 +410,39 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               onPress={handleSignUp}
               disabled={loading}
               activeOpacity={0.82}
-              style={{ overflow: 'hidden', borderRadius: 12, marginTop: 4 }}
+              style={{ overflow: 'hidden', borderRadius: 12, marginTop: 6 }}
             >
               <LinearGradient
                 colors={
                   (loading
                     ? [Colors.surfaceHighlight, Colors.surfaceHighlight]
-                    : password.length > 0 && !passwordStats.isValid
-                    ? ['#343a40', '#495057']
+                    : !passwordStats.isValid
+                    ? ['#26282b', '#26282b']
                     : ['#3B5BDB', '#0C8599']) as [string, string, ...string[]]
                 }
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.submitBtn}
+                style={[
+                  styles.submitBtn,
+                  !passwordStats.isValid && !loading && styles.submitBtnLocked,
+                ]}
               >
                 {loading ? (
                   <ActivityIndicator size="small" color={Colors.white} />
                 ) : (
                   <>
-                    <Text style={styles.submitBtnText}>Continue to Setup</Text>
-                    <ArrowRight size={16} color={Colors.white} />
+                    <Text
+                      style={[
+                        styles.submitBtnText,
+                        !passwordStats.isValid && styles.submitBtnTextLocked,
+                      ]}
+                    >
+                      {passwordStats.isValid ? 'Create Account & Continue' : 'Satisfy All 5 Rules to Continue'}
+                    </Text>
+                    <ArrowRight
+                      size={16}
+                      color={passwordStats.isValid ? Colors.white : Colors.textSubdued}
+                    />
                   </>
                 )}
               </LinearGradient>
@@ -392,7 +458,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
           <View style={styles.securityRow}>
             <ShieldCheck size={12} color={Colors.textSubdued} />
-            <Text style={styles.securityText}>Supabase encrypted · Your data stays private</Text>
+            <Text style={styles.securityText}>Supabase encrypted · Password salted & hashed</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -402,29 +468,29 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: Colors.background },
-  scrollContent: { flexGrow: 1, padding: 22, paddingTop: 28, paddingBottom: 40 },
-  hero: { alignItems: 'center', marginBottom: 24 },
+  scrollContent: { flexGrow: 1, padding: 22, paddingTop: 24, paddingBottom: 40 },
+  hero: { alignItems: 'center', marginBottom: 20 },
   logoGradient: {
-    width: 56,
-    height: 56,
+    width: 54,
+    height: 54,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 12,
     shadowColor: '#3B5BDB',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
     shadowRadius: 14,
     elevation: 10,
   },
-  heroTitle: { fontSize: 24, fontWeight: '800', color: Colors.text, letterSpacing: -0.5, marginBottom: 5 },
+  heroTitle: { fontSize: 24, fontWeight: '800', color: Colors.text, letterSpacing: -0.5, marginBottom: 4 },
   heroSubtitle: { fontSize: 13, color: Colors.textMuted, textAlign: 'center' },
   card: {
     backgroundColor: Colors.surfaceCard,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: 20,
-    padding: 22,
+    padding: 20,
     gap: 14,
   },
   errorBox: {
@@ -438,7 +504,7 @@ const styles = StyleSheet.create({
     padding: 11,
   },
   errorText: { fontSize: 12, color: Colors.expense, flex: 1 },
-  inputGroup: { gap: 7 },
+  inputGroup: { gap: 6 },
   inputLabel: { fontSize: 10, fontFamily: 'monospace', color: Colors.textMuted, letterSpacing: 1 },
   inputWrapper: {
     flexDirection: 'row',
@@ -448,20 +514,20 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.07)',
     borderRadius: 12,
     paddingHorizontal: 14,
-    height: 50,
+    height: 48,
   },
   inputWrapperFocused: { borderColor: Colors.brandBorder, backgroundColor: 'rgba(94,106,210,0.06)' },
   input: { flex: 1, color: Colors.text, fontSize: 14 },
 
   // Password Strength Styles
   strengthContainer: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: 'rgba(255,255,255,0.025)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
     borderRadius: 12,
     padding: 12,
     marginTop: 4,
-    gap: 8,
+    gap: 9,
   },
   strengthHeader: {
     flexDirection: 'row',
@@ -471,8 +537,9 @@ const styles = StyleSheet.create({
   strengthTitle: {
     fontSize: 9.5,
     fontFamily: 'monospace',
-    color: Colors.textSubdued,
+    color: Colors.textMuted,
     letterSpacing: 0.8,
+    fontWeight: '600',
   },
   strengthLabel: {
     fontSize: 11,
@@ -490,13 +557,27 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   criteriaContainer: {
-    marginTop: 4,
-    gap: 5,
+    marginTop: 2,
+    gap: 6,
   },
   criterionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: 8,
+  },
+  criterionBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  criterionBadgeMet: {
+    backgroundColor: 'rgba(16,185,129,0.15)',
+    borderColor: 'rgba(16,185,129,0.3)',
   },
   criterionText: {
     fontSize: 11.5,
@@ -504,21 +585,26 @@ const styles = StyleSheet.create({
   },
   criterionTextMet: {
     color: '#d3f9d8',
-    fontWeight: '500',
+    fontWeight: '600',
   },
 
-  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15 },
-  submitBtnText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+  submitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
+  submitBtnLocked: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  submitBtnText: { fontSize: 14.5, fontWeight: '700', color: Colors.white },
+  submitBtnTextLocked: { color: Colors.textSubdued, fontSize: 13 },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-    paddingTop: 14,
+    paddingTop: 13,
   },
   footerText: { fontSize: 12.5, color: Colors.textMuted },
   linkText: { fontSize: 12.5, color: Colors.brand, fontWeight: '700' },
-  securityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 18 },
+  securityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16 },
   securityText: { fontSize: 10.5, fontFamily: 'monospace', color: Colors.textSubdued },
 });

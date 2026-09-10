@@ -172,11 +172,6 @@ export async function signInWithCredentials(
   pass: string
 ): Promise<{ success: boolean; session?: UserSession; error?: string }> {
   try {
-    const passValidation = validatePasswordStrength(pass);
-    if (!passValidation.isValid) {
-      return { success: false, error: passValidation.error || 'Password does not meet strength requirements.' };
-    }
-
     const cleanEmail = email.trim().toLowerCase();
     
     const { data: user, error } = await supabase
@@ -283,6 +278,14 @@ export async function signUpWithCredentials(
   pass: string
 ): Promise<{ success: boolean; session?: UserSession; error?: string }> {
   try {
+    const passValidation = validatePasswordStrength(pass);
+    if (!passValidation.isValid) {
+      return {
+        success: false,
+        error: passValidation.error || 'Password must meet all 5 security requirements.',
+      };
+    }
+
     const cleanEmail = email.trim().toLowerCase();
 
     // Check if user already exists

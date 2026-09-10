@@ -18,7 +18,7 @@
     },
     "updates": {
       "checkAutomatically": "ON_LOAD",
-      "fallbackToCacheTimeout": 0,
+      "fallbackToCacheTimeout": 5000,
       "url": "https://u.expo.dev/9ddae4b5-9956-44fa-9cd1-ee2d13bed507"
     },
     "android": {
