@@ -162,20 +162,42 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             {/* Upcoming / Projected Month-End Callout */}
             {upcomingCount > 0 && projectedBalance !== undefined && (
               <View style={styles.projectedBanner}>
+                {/* Header Row: Timing badge & Expected month-end balance */}
                 <View style={styles.projectedBannerTop}>
                   <View style={styles.projectedBadge}>
-                    <Clock size={10.5} color="#818CF8" />
+                    <Clock size={11} color="#A5B4FC" />
                     <Text style={styles.projectedBadgeText}>
                       UPCOMING {earliestUpcomingDate ? `· ${earliestUpcomingDate.toUpperCase()}` : ''}
                     </Text>
                   </View>
-                  <Text style={styles.projectedTargetText}>
-                    Month-End: <Text style={styles.projectedTargetAmount}>{formatCurrency(projectedBalance)}</Text>
-                  </Text>
+                  <View style={styles.projectedTargetPill}>
+                    <Text style={styles.projectedTargetLabel}>Month-End Est.</Text>
+                    <Text style={styles.projectedTargetAmount}>{formatCurrency(projectedBalance)}</Text>
+                  </View>
                 </View>
-                <Text style={styles.projectedBreakdownText}>
-                  {upcomingCount} scheduled {upcomingCount === 1 ? 'transaction' : 'transactions'} ({upcomingIncome > 0 ? `+${formatCurrency(upcomingIncome, { showDecimals: false })}` : ''}{upcomingIncome > 0 && upcomingExpense > 0 ? ' · ' : ''}{upcomingExpense > 0 ? `-${formatCurrency(upcomingExpense, { showDecimals: false })}` : ''})
-                </Text>
+
+                {/* Sub Row: Scheduled atomic inflow / outflow pills */}
+                <View style={styles.projectedBreakdownRow}>
+                  <Text style={styles.projectedCountLabel}>
+                    {upcomingCount} scheduled:
+                  </Text>
+                  <View style={styles.projectedPillsWrap}>
+                    {upcomingIncome > 0 && (
+                      <View style={styles.projectedIncomePill}>
+                        <Text style={styles.projectedIncomeText}>
+                          +{formatCurrency(upcomingIncome, { showDecimals: false })}
+                        </Text>
+                      </View>
+                    )}
+                    {upcomingExpense > 0 && (
+                      <View style={styles.projectedExpensePill}>
+                        <Text style={styles.projectedExpenseText}>
+                          -{formatCurrency(upcomingExpense, { showDecimals: false })}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
               </View>
             )}
           </View>
@@ -421,46 +443,105 @@ const styles = StyleSheet.create({
     }),
   },
   projectedBanner: {
-    marginTop: 10,
+    marginTop: 12,
     backgroundColor: 'rgba(99, 102, 241, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(129, 140, 248, 0.22)',
-    borderRadius: 10,
-    paddingHorizontal: 11,
-    paddingVertical: 8,
-    gap: 3,
+    borderColor: 'rgba(129, 140, 248, 0.24)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
   },
   projectedBannerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
   },
   projectedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4.5,
+    gap: 5,
+    backgroundColor: 'rgba(99, 102, 241, 0.16)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   projectedBadgeText: {
     fontSize: 9.5,
     fontFamily: 'monospace',
     fontWeight: '700',
-    color: '#A5B4FC',
+    color: '#C7D2FE',
     letterSpacing: 0.6,
   },
-  projectedTargetText: {
-    fontSize: 11,
+  projectedTargetPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  projectedTargetLabel: {
+    fontSize: 10.5,
     color: '#94A3B8',
     fontWeight: '500',
   },
   projectedTargetAmount: {
+    fontSize: 12.5,
     color: '#FFFFFF',
     fontWeight: '700',
     fontFamily: 'monospace',
+    letterSpacing: -0.2,
   },
-  projectedBreakdownText: {
+  projectedBreakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 7,
+    paddingTop: 7,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
+  },
+  projectedCountLabel: {
     fontSize: 10.5,
-    color: '#CBD5E1',
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  projectedPillsWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  projectedIncomePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  projectedIncomeText: {
+    fontSize: 10.5,
+    fontWeight: '700',
     fontFamily: 'monospace',
+    color: '#10B981',
+  },
+  projectedExpensePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(244, 63, 94, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(244, 63, 94, 0.3)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  projectedExpenseText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#F43F5E',
   },
   divider: {
     height: 1.5,

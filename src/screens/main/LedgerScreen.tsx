@@ -355,22 +355,39 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
             <View style={styles.ledgerUpcomingStrip}>
               <View style={styles.ledgerUpcomingHeaderRow}>
                 <View style={styles.ledgerUpcomingBadge}>
-                  <Clock size={10} color="#A5B4FC" />
+                  <Clock size={10.5} color="#A5B4FC" />
                   <Text style={styles.ledgerUpcomingBadgeText}>
-                    {monthMetrics.upcomingCount} UPCOMING THIS MONTH
+                    UPCOMING {monthMetrics.earliestUpcomingDate ? `· DUE ${monthMetrics.earliestUpcomingDate.toUpperCase()}` : ''}
                   </Text>
                 </View>
-                {monthMetrics.earliestUpcomingDate && (
-                  <Text style={styles.ledgerUpcomingDateText}>
-                    Due {monthMetrics.earliestUpcomingDate}
+                <View style={styles.ledgerUpcomingTargetPill}>
+                  <Text style={styles.ledgerUpcomingTargetLabel}>Projected Net</Text>
+                  <Text style={styles.ledgerUpcomingTargetValue}>
+                    {monthMetrics.projectedNet > 0 ? '+' : ''}{formatCurrency(monthMetrics.projectedNet)}
                   </Text>
-                )}
+                </View>
               </View>
-              <Text style={styles.ledgerUpcomingBreakdownText}>
-                {monthMetrics.upcomingIncome > 0 ? `+${formatCurrency(monthMetrics.upcomingIncome, { showDecimals: false })} Inflow · ` : ''}
-                {monthMetrics.upcomingExpense > 0 ? `-${formatCurrency(monthMetrics.upcomingExpense, { showDecimals: false })} Outflow · ` : ''}
-                Projected Net: <Text style={styles.ledgerUpcomingBoldNet}>{monthMetrics.projectedNet > 0 ? '+' : ''}{formatCurrency(monthMetrics.projectedNet)}</Text>
-              </Text>
+              <View style={styles.ledgerUpcomingBreakdownRow}>
+                <Text style={styles.ledgerUpcomingCountLabel}>
+                  {monthMetrics.upcomingCount} scheduled:
+                </Text>
+                <View style={styles.ledgerUpcomingPillsWrap}>
+                  {monthMetrics.upcomingIncome > 0 && (
+                    <View style={styles.ledgerIncomePill}>
+                      <Text style={styles.ledgerIncomeText}>
+                        +{formatCurrency(monthMetrics.upcomingIncome, { showDecimals: false })} Inflow
+                      </Text>
+                    </View>
+                  )}
+                  {monthMetrics.upcomingExpense > 0 && (
+                    <View style={styles.ledgerExpensePill}>
+                      <Text style={styles.ledgerExpenseText}>
+                        -{formatCurrency(monthMetrics.upcomingExpense, { showDecimals: false })} Outflow
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
             </View>
           )}
 
@@ -922,46 +939,100 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   ledgerUpcomingStrip: {
-    marginTop: 10,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    marginTop: 12,
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(129, 140, 248, 0.28)',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    gap: 3,
+    borderColor: 'rgba(129, 140, 248, 0.24)',
+    borderRadius: 10,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+    gap: 7,
   },
   ledgerUpcomingHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 8,
   },
   ledgerUpcomingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 4.5,
+    backgroundColor: 'rgba(99, 102, 241, 0.16)',
+    paddingHorizontal: 6.5,
+    paddingVertical: 2.5,
+    borderRadius: 5,
   },
   ledgerUpcomingBadgeText: {
     fontSize: 9.5,
     fontFamily: 'monospace',
     fontWeight: '700',
-    color: '#A5B4FC',
+    color: '#C7D2FE',
     letterSpacing: 0.5,
   },
-  ledgerUpcomingDateText: {
-    fontSize: 9.5,
-    fontFamily: 'monospace',
-    fontWeight: '600',
-    color: '#C7D2FE',
+  ledgerUpcomingTargetPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
-  ledgerUpcomingBreakdownText: {
+  ledgerUpcomingTargetLabel: {
     fontSize: 10,
-    color: '#CBD5E1',
-    fontFamily: 'monospace',
+    color: '#94A3B8',
+    fontWeight: '500',
   },
-  ledgerUpcomingBoldNet: {
+  ledgerUpcomingTargetValue: {
+    fontSize: 12,
     fontWeight: '700',
+    fontFamily: 'monospace',
     color: '#FFFFFF',
+  },
+  ledgerUpcomingBreakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  ledgerUpcomingCountLabel: {
+    fontSize: 10,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  ledgerUpcomingPillsWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  ledgerIncomePill: {
+    backgroundColor: 'rgba(16, 185, 129, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 5,
+  },
+  ledgerIncomeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#10B981',
+  },
+  ledgerExpensePill: {
+    backgroundColor: 'rgba(244, 63, 94, 0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(244, 63, 94, 0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 5,
+  },
+  ledgerExpenseText: {
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily: 'monospace',
+    color: '#F43F5E',
   },
   newEntryBtn: {
     flexDirection: 'row',
