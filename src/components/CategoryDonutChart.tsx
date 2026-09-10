@@ -4,9 +4,10 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { Colors } from '../constants/colors';
-import { Transaction } from '../types';
+import { Transaction, RecurringItem } from '../types';
 import { AnimatedCounter } from './AnimatedCounter';
 import { formatCurrency } from '../lib/currency';
+import { getRecurringScheduleInfo } from '../lib/recurringManager';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIZE = Math.min(SCREEN_WIDTH * 0.42, 155);
@@ -27,42 +28,66 @@ const CHART_COLORS = [
 
 interface CategoryDonutChartProps {
   transactions: Transaction[];
+  recurringItems?: RecurringItem[];
   duration?: number;
   isVisible?: boolean;
 }
 
 export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
-  transactions,
-  duration = 2600,
+  transactions = [],
+  recurringItems = [],
+  duration = 2400,
   isVisible = true,
 }) => {
   const [sweepProgress, setSweepProgress] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
   const animFrameRef = useRef<number | null>(null);
   const startTimeRef = useRef<number>(0);
 
-  const expenses = transactions.filter((t) => t.type === 'expenditure');
-  const total = expenses.reduce((sum, t) => sum + t.amount, 0);
+  // Dynamically compute category totals combining realized expenses and active recurring commitments
+  const { catMap, total, scheduledCount } = useMemo(() => {
+    const map: Record<string, number> = {};
+    let sum = 0;
+    let scheduled = 0;
 
-  const catMap: Record<string, number> = {};
-  expenses.forEach((t) => {
-    catMap[t.category] = (catMap[t.category] || 0) + t.amount;
-  });
-  const sorted = Object.entries(catMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 6);
+    // 1. Realized transaction expenses
+    transactions
+      .filter((t) => t.type === 'expenditure')
+      .forEach((t) => {
+        sum += t.amount;
+        const cat = t.category || 'Other';
+        map[cat] = (map[cat] || 0) + t.amount;
+      });
+
+    // 2. Active recurring expense commitments for this cycle (if not already deducted)
+    recurringItems
+      .filter((r) => r.type === 'expenditure')
+      .forEach((r) => {
+        const info = getRecurringScheduleInfo(r, transactions);
+        if (!info.isSettledThisMonth) {
+          sum += r.amount;
+          scheduled++;
+          const cat = r.category || 'Other';
+          map[cat] = (map[cat] || 0) + r.amount;
+        }
+      });
+
+    return { catMap: map, total: sum, scheduledCount: scheduled };
+  }, [transactions, recurringItems]);
+
+  const sorted = useMemo(() => {
+    return Object.entries(catMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+  }, [catMap]);
 
   // Easing function: easeOutCubic
   const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
   useEffect(() => {
-    if (!isVisible) {
+    if (!isVisible || total === 0) {
       setSweepProgress(0);
-      setHasAnimated(false);
       return;
     }
-
-    if (hasAnimated && isVisible) return;
 
     setSweepProgress(0);
     const startTime = Date.now();
@@ -76,8 +101,6 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
       if (progress < 1) {
         animFrameRef.current = requestAnimationFrame(tick);
-      } else {
-        setHasAnimated(true);
       }
     };
 
@@ -88,7 +111,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
         cancelAnimationFrame(animFrameRef.current);
       }
     };
-  }, [isVisible, transactions, duration]);
+  }, [isVisible, total, duration]);
 
   // Compute segmented arcs geometry
   const segments = useMemo(() => {
@@ -96,7 +119,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
     let currentAngle = -90; // Start at 12 o'clock
     const hasMultiple = sorted.length > 1;
-    // 3-degree gap between slices if multiple categories
+    // 3.5-degree gap between slices if multiple categories
     const gapDeg = hasMultiple ? 3.5 : 0;
     const gapLength = (gapDeg / 360) * CIRCUMFERENCE;
 
@@ -125,7 +148,7 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
       <View style={styles.wrapper}>
         <Text style={styles.title}>Spending by Category</Text>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No expenses recorded yet</Text>
+          <Text style={styles.emptyText}>No expenses or recurring bills scheduled yet</Text>
         </View>
       </View>
     );
@@ -133,7 +156,22 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.title}>Spending by Category</Text>
+      <View style={styles.headerRow}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.title}>Spending by Category</Text>
+          <Text style={styles.subtitle}>
+            {scheduledCount > 0
+              ? `Realized spend + ${scheduledCount} scheduled ${scheduledCount === 1 ? 'bill' : 'bills'}`
+              : 'Realized expenses breakdown'}
+          </Text>
+        </View>
+        {scheduledCount > 0 && (
+          <View style={styles.liveBadge}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveBadgeText}>LIVE FLOW</Text>
+          </View>
+        )}
+      </View>
 
       <View style={styles.content}>
         {/* Radial Donut Container */}
@@ -181,7 +219,9 @@ export const CategoryDonutChart: React.FC<CategoryDonutChartProps> = ({
               duration={duration}
               decimals={2}
             />
-            <Text style={styles.centerSub}>total spent</Text>
+            <Text style={styles.centerSub}>
+              {scheduledCount > 0 ? 'total spent & committed' : 'total spent'}
+            </Text>
           </View>
         </View>
 
@@ -216,11 +256,47 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+    gap: 8,
+  },
   title: {
     fontSize: 14,
     fontWeight: '700',
     color: Colors.text,
-    marginBottom: 14,
+  },
+  subtitle: {
+    fontSize: 10,
+    fontFamily: 'monospace',
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(99, 102, 241, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.28)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 5,
+  },
+  liveDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: Colors.brand,
+  },
+  liveBadgeText: {
+    fontSize: 8.5,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: Colors.brand,
+    letterSpacing: 0.5,
   },
   content: {
     flexDirection: 'row',
@@ -241,7 +317,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   centerSub: {
-    fontSize: 9,
+    fontSize: 8.5,
     color: Colors.textMuted,
     fontWeight: '500',
     marginTop: 2,

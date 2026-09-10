@@ -256,7 +256,11 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             style={styles.section}
             onLayout={(e) => setDonutY(e.nativeEvent.layout.y)}
           >
-            <CategoryDonutChart transactions={transactions} isVisible={isDonutVisible} />
+            <CategoryDonutChart
+              transactions={transactions}
+              recurringItems={recurringItems}
+              isVisible={isDonutVisible}
+            />
           </View>
         )}
 
