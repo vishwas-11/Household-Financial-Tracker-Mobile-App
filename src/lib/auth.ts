@@ -172,6 +172,11 @@ export async function signInWithCredentials(
   pass: string
 ): Promise<{ success: boolean; session?: UserSession; error?: string }> {
   try {
+    const passValidation = validatePasswordStrength(pass);
+    if (!passValidation.isValid) {
+      return { success: false, error: passValidation.error || 'Password does not meet strength requirements.' };
+    }
+
     const cleanEmail = email.trim().toLowerCase();
     
     const { data: user, error } = await supabase
@@ -215,6 +220,58 @@ export async function signInWithCredentials(
   } catch (err: any) {
     return { success: false, error: err?.message || 'Authentication error' };
   }
+}
+
+export interface PasswordValidationResult {
+  isValid: boolean;
+  score: number;
+  hasMinLength: boolean;
+  hasUppercase: boolean;
+  hasLowercase: boolean;
+  hasNumber: boolean;
+  hasSpecial: boolean;
+  error?: string;
+}
+
+export function validatePasswordStrength(pass: string): PasswordValidationResult {
+  const hasMinLength = (pass || '').length >= 8;
+  const hasUppercase = /[A-Z]/.test(pass || '');
+  const hasLowercase = /[a-z]/.test(pass || '');
+  const hasNumber = /[0-9]/.test(pass || '');
+  const hasSpecial = /[^A-Za-z0-9]/.test(pass || '');
+
+  let score = 0;
+  if (hasMinLength) score++;
+  if (hasUppercase) score++;
+  if (hasLowercase) score++;
+  if (hasNumber) score++;
+  if (hasSpecial) score++;
+
+  const isValid = score === 5;
+  let error: string | undefined;
+
+  if (!hasMinLength) {
+    error = 'Password must be at least 8 characters long.';
+  } else if (!hasUppercase) {
+    error = 'Password must contain at least one uppercase letter (A-Z).';
+  } else if (!hasLowercase) {
+    error = 'Password must contain at least one lowercase letter (a-z).';
+  } else if (!hasNumber) {
+    error = 'Password must contain at least one digit (0-9).';
+  } else if (!hasSpecial) {
+    error = 'Password must contain at least one special character (e.g. !@#$%^&*).';
+  }
+
+  return {
+    isValid,
+    score,
+    hasMinLength,
+    hasUppercase,
+    hasLowercase,
+    hasNumber,
+    hasSpecial,
+    error,
+  };
 }
 
 /**
