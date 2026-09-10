@@ -31,7 +31,6 @@ export const RecurringScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Header
-        onOpenAddModal={() => setIsAddModalOpen(true)}
         title="Recurring Schedules"
         subtitle="Automated Obligations"
       />

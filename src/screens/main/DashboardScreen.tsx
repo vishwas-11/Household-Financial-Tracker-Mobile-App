@@ -70,7 +70,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     setIsAddModalOpen(true);
   };
 
-  const balanceMetrics = calculateBalanceMetrics(transactions);
+  const balanceMetrics = calculateBalanceMetrics(transactions, recurringItems);
   const {
     currentHolding,
     realizedIncome,

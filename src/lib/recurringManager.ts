@@ -3,7 +3,14 @@ import { RecurringItem, Transaction, Member } from '../types';
 
 export function parseDueDay(dueDateStr: string): number {
   if (!dueDateStr) return 1;
-  const match = dueDateStr.match(/\d+/);
+  const trimmed = dueDateStr.trim();
+  // If ISO YYYY-MM-DD format, extract day component (parts[2])
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const parts = trimmed.split('-');
+    const day = parseInt(parts[2], 10);
+    return Math.min(Math.max(day, 1), 31);
+  }
+  const match = trimmed.match(/\d+/);
   if (match) {
     const day = parseInt(match[0], 10);
     return Math.min(Math.max(day, 1), 31);

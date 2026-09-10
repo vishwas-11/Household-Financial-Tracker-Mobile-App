@@ -47,7 +47,7 @@ const MONTH_SHORT_NAMES = [
 ];
 
 export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ route, navigation }) => {
-  const { transactions, members, deleteTransaction, isRefreshing, refreshData } = useApp();
+  const { transactions, recurringItems, members, deleteTransaction, isRefreshing, refreshData } = useApp();
 
   const now = useMemo(() => new Date(), []);
   const currentYear = now.getFullYear();
@@ -148,12 +148,12 @@ export const LedgerScreen: React.FC<{ route?: any; navigation?: any }> = ({ rout
 
   // Financial calculations for the selected month (separated into realized vs upcoming)
   const monthMetrics = useMemo(() => {
-    return calculateMonthMetrics(monthTransactions);
+    return calculateMonthMetrics(monthTransactions, recurringItems);
   }, [monthTransactions]);
 
   // Overall household balance metrics across all transactions
   const overallBalance = useMemo(() => {
-    return calculateBalanceMetrics(transactions);
+    return calculateBalanceMetrics(transactions, recurringItems);
   }, [transactions]);
 
   const monthIncome = monthMetrics.realizedIncome;

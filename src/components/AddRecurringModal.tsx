@@ -1,5 +1,5 @@
 // src/components/AddRecurringModal.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Modal,
   View,
@@ -13,7 +13,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, Check } from 'lucide-react-native';
+import { X, Check, Calendar, Clock, Repeat } from 'lucide-react-native';
 import { RecurringItem, TransactionType } from '../types';
 import { Colors } from '../constants/colors';
 import { TRANSACTION_CATEGORIES } from '../constants/initialData';
@@ -24,6 +24,22 @@ interface AddRecurringModalProps {
   onClose: () => void;
 }
 
+function getOrdinalSuffix(day: number): string {
+  if (day >= 11 && day <= 13) return 'th';
+  switch (day % 10) {
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
+  }
+}
+
+const PRESET_DAYS = [1, 5, 10, 15, 16, 20, 25, 28, 30, 31];
+
 export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
   visible,
   onClose,
@@ -32,13 +48,44 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const todayDate = now.getDate();
+
   const [title, setTitle] = useState('');
   const [type, setType] = useState<TransactionType>('expenditure');
   const [amount, setAmount] = useState('');
   const [frequency, setFrequency] = useState<'Monthly' | 'Bi-weekly' | 'Weekly' | 'Annual'>('Monthly');
   const [category, setCategory] = useState(TRANSACTION_CATEGORIES[0]);
   const [assignedMemberId, setAssignedMemberId] = useState(members[0]?.id || 'A');
-  const [dueDateText, setDueDateText] = useState('1st of month');
+  const [dueDay, setDueDay] = useState<number>(1);
+
+  // Compute next due date preview and cycle info
+  const cyclePreview = useMemo(() => {
+    let nextDate: Date;
+    let isThisMonth: boolean;
+
+    if (dueDay >= todayDate) {
+      nextDate = new Date(currentYear, currentMonth, dueDay);
+      isThisMonth = true;
+    } else {
+      nextDate = new Date(currentYear, currentMonth + 1, dueDay);
+      isThisMonth = false;
+    }
+
+    const formattedDate = nextDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    return {
+      formattedDate,
+      isThisMonth,
+      dueDayLabel: `${dueDay}${getOrdinalSuffix(dueDay)}`,
+    };
+  }, [dueDay, todayDate, currentYear, currentMonth]);
 
   const handleSubmit = async () => {
     const parsedAmount = parseFloat(amount);
@@ -46,12 +93,14 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
       return;
     }
 
+    const nextDueDate = `${dueDay}${getOrdinalSuffix(dueDay)} of month`;
+
     const newItem: RecurringItem = {
       id: `rec-${Date.now()}`,
       title: title.trim(),
       amount: parsedAmount,
       frequency,
-      nextDueDate: dueDateText.trim() || '1st of month',
+      nextDueDate,
       category,
       type,
       autoPay: true,
@@ -86,14 +135,16 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
           <View
             style={[
               styles.container,
-              { height: Math.round(windowHeight * 0.82) },
+              { height: Math.round(windowHeight * 0.85) },
             ]}
           >
             {/* Header */}
             <View style={styles.header}>
               <View>
                 <Text style={styles.headerTitle}>New Recurring Schedule</Text>
-                <Text style={styles.headerSubtitle}>Automate recurring bills or income streams</Text>
+                <Text style={styles.headerSubtitle}>
+                  Automate recurring bills or income streams
+                </Text>
               </View>
               <TouchableOpacity
                 onPress={onClose}
@@ -129,7 +180,9 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
                         },
                       ]}
                     >
-                      {t === 'expenditure' ? 'Expenditure (Bill / Sub)' : 'Income (Salary / Deposit)'}
+                      {t === 'expenditure'
+                        ? 'Expenditure (Bill / Sub)'
+                        : 'Income (Salary / Deposit)'}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -164,50 +217,140 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>FREQUENCY</Text>
                 <View style={styles.cadenceRow}>
-                  {(['Monthly', 'Bi-weekly', 'Weekly', 'Annual'] as const).map((f) => (
+                  {(['Monthly', 'Bi-weekly', 'Weekly', 'Annual'] as const).map(
+                    (f) => (
+                      <TouchableOpacity
+                        key={f}
+                        onPress={() => setFrequency(f)}
+                        style={[
+                          styles.cadenceTab,
+                          frequency === f && styles.cadenceTabActive,
+                        ]}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.cadenceText,
+                            frequency === f && styles.cadenceTextActive,
+                          ]}
+                        >
+                          {f}
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  )}
+                </View>
+              </View>
+
+              {/* Interactive Due Date & Day Selection */}
+              <View style={styles.inputGroup}>
+                <View style={styles.labelRow}>
+                  <Text style={styles.inputLabel}>RECURRING PAYMENT DAY</Text>
+                  <Text style={styles.selectedDayBadge}>
+                    Day {dueDay} ({cyclePreview.dueDayLabel})
+                  </Text>
+                </View>
+
+                {/* Quick Presets */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.presetsStrip}
+                >
+                  {PRESET_DAYS.map((d) => (
                     <TouchableOpacity
-                      key={f}
-                      onPress={() => setFrequency(f)}
-                      style={[styles.cadenceTab, frequency === f && styles.cadenceTabActive]}
+                      key={d}
+                      onPress={() => setDueDay(d)}
+                      style={[
+                        styles.dayPresetBtn,
+                        dueDay === d && styles.dayPresetBtnActive,
+                      ]}
                       activeOpacity={0.7}
                     >
                       <Text
                         style={[
-                          styles.cadenceText,
-                          frequency === f && styles.cadenceTextActive,
+                          styles.dayPresetText,
+                          dueDay === d && styles.dayPresetTextActive,
                         ]}
                       >
-                        {f}
+                        {d === 31 ? 'End of mo.' : `${d}${getOrdinalSuffix(d)}`}
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
-              </View>
+                </ScrollView>
 
-              {/* Due Date Text */}
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>DUE CYCLE TEXT</Text>
-                <TextInput
-                  value={dueDateText}
-                  onChangeText={setDueDateText}
-                  placeholder="e.g. 1st of month / 15th"
-                  placeholderTextColor={Colors.textSubdued}
-                  style={styles.textInput}
-                />
+                {/* Days 1 to 31 Scrollable Strip */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.daysScrollStrip}
+                >
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => {
+                    const isSelected = dueDay === d;
+                    return (
+                      <TouchableOpacity
+                        key={d}
+                        onPress={() => setDueDay(d)}
+                        style={[
+                          styles.dayPill,
+                          isSelected && styles.dayPillActive,
+                        ]}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.dayPillText,
+                            isSelected && styles.dayPillTextActive,
+                          ]}
+                        >
+                          {d}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Cycle Status & Forecast Indicator */}
+                <View style={styles.cyclePreviewCard}>
+                  <View style={styles.cyclePreviewHeader}>
+                    <Clock size={12} color="#A5B4FC" />
+                    <Text style={styles.cyclePreviewTitle}>
+                      Repeats on the {cyclePreview.dueDayLabel} of every month
+                    </Text>
+                  </View>
+                  <Text style={styles.cyclePreviewSub}>
+                    Next scheduled cycle: <Text style={styles.cyclePreviewDate}>{cyclePreview.formattedDate}</Text>
+                    {cyclePreview.isThisMonth
+                      ? ' · Included in this month\'s Dashboard upcoming balance.'
+                      : ' · Starts next month\'s financial cycle.'}
+                  </Text>
+                </View>
               </View>
 
               {/* Category */}
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>CATEGORY</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.chipScroll}
+                >
                   {TRANSACTION_CATEGORIES.map((cat) => (
                     <TouchableOpacity
                       key={cat}
                       onPress={() => setCategory(cat)}
-                      style={[styles.chip, category === cat && styles.chipActive]}
+                      style={[
+                        styles.chip,
+                        category === cat && styles.chipActive,
+                      ]}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          category === cat && styles.chipTextActive,
+                        ]}
+                      >
                         {cat}
                       </Text>
                     </TouchableOpacity>
@@ -217,7 +360,12 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
             </ScrollView>
 
             {/* Footer */}
-            <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+            <View
+              style={[
+                styles.footer,
+                { paddingBottom: Math.max(insets.bottom, 16) },
+              ]}
+            >
               <TouchableOpacity
                 onPress={handleSubmit}
                 style={styles.submitBtn}
@@ -314,12 +462,23 @@ const styles = StyleSheet.create({
   inputGroup: {
     gap: 6,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   inputLabel: {
     fontSize: 10,
     fontFamily: 'monospace',
     color: Colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
+  },
+  selectedDayBadge: {
+    fontSize: 10.5,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: Colors.brand,
   },
   textInput: {
     backgroundColor: Colors.background,
@@ -356,6 +515,89 @@ const styles = StyleSheet.create({
   cadenceTextActive: {
     color: Colors.brand,
     fontWeight: '600',
+  },
+  presetsStrip: {
+    gap: 6,
+    paddingVertical: 2,
+  },
+  dayPresetBtn: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  dayPresetBtnActive: {
+    backgroundColor: Colors.brandSubdued,
+    borderColor: Colors.brand,
+  },
+  dayPresetText: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    fontFamily: 'monospace',
+    fontWeight: '500',
+  },
+  dayPresetTextActive: {
+    color: Colors.brand,
+    fontWeight: '700',
+  },
+  daysScrollStrip: {
+    gap: 6,
+    paddingVertical: 4,
+  },
+  dayPill: {
+    width: 32,
+    height: 32,
+    borderRadius: 7,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayPillActive: {
+    backgroundColor: Colors.brand,
+    borderColor: Colors.brand,
+  },
+  dayPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    fontFamily: 'monospace',
+    color: Colors.textSecondary,
+  },
+  dayPillTextActive: {
+    color: Colors.white,
+    fontWeight: '800',
+  },
+  cyclePreviewCard: {
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(129, 140, 248, 0.22)',
+    borderRadius: 8,
+    padding: 9,
+    gap: 3,
+    marginTop: 4,
+  },
+  cyclePreviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  cyclePreviewTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#C7D2FE',
+  },
+  cyclePreviewSub: {
+    fontSize: 10,
+    color: '#94A3B8',
+    lineHeight: 14,
+  },
+  cyclePreviewDate: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontFamily: 'monospace',
   },
   chipScroll: {
     flexDirection: 'row',

@@ -1,5 +1,6 @@
 // src/lib/transactionCalculations.ts
-import { Transaction } from '../types';
+import { Transaction, RecurringItem } from '../types';
+import { getRecurringScheduleInfo } from './recurringManager';
 
 /**
  * Returns today's date in local calendar 'YYYY-MM-DD' format
@@ -38,6 +39,7 @@ export interface BalanceMetrics {
  */
 export function calculateBalanceMetrics(
   transactions: Transaction[],
+  recurringItems: RecurringItem[] = [],
   todayStr: string = getTodayDateString()
 ): BalanceMetrics {
   let realizedIncome = 0;
@@ -72,6 +74,33 @@ export function calculateBalanceMetrics(
         realizedExpense += t.amount;
       } else if (t.type === 'savings') {
         realizedSavings += t.amount;
+      }
+    }
+  }
+
+  // Aggregate active recurring commitments due later this month (if not already settled)
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-indexed
+  const todayDate = now.getDate();
+
+  for (const item of recurringItems) {
+    const info = getRecurringScheduleInfo(item, transactions, now);
+    // If not yet settled this month and due day is in the future (> todayDate)
+    if (!info.isSettledThisMonth && info.dueDay > todayDate) {
+      upcomingCount++;
+      if (item.type === 'income') {
+        upcomingIncome += item.amount;
+      } else if (item.type === 'expenditure') {
+        upcomingExpense += item.amount;
+      }
+
+      const dueFullDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(info.dueDay).padStart(2, '0')}`;
+      const dueDisplayDate = new Date(currentYear, currentMonth, info.dueDay).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      if (!earliestUpcomingFullDate || dueFullDate < earliestUpcomingFullDate) {
+        earliestUpcomingFullDate = dueFullDate;
+        earliestUpcomingDateLabel = dueDisplayDate;
       }
     }
   }
@@ -120,6 +149,7 @@ export interface MonthMetrics {
  */
 export function calculateMonthMetrics(
   monthTransactions: Transaction[],
+  recurringItems: RecurringItem[] = [],
   todayStr: string = getTodayDateString()
 ): MonthMetrics {
   let realizedIncome = 0;
@@ -148,6 +178,32 @@ export function calculateMonthMetrics(
       realizedCount++;
       if (t.type === 'income') realizedIncome += t.amount;
       else if (t.type === 'expenditure') realizedExpense += t.amount;
+    }
+  }
+
+  // Aggregate active recurring commitments due later this month (if not already settled)
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const todayDate = now.getDate();
+
+  for (const item of recurringItems) {
+    const info = getRecurringScheduleInfo(item, monthTransactions, now);
+    if (!info.isSettledThisMonth && info.dueDay > todayDate) {
+      upcomingCount++;
+      if (item.type === 'income') {
+        upcomingIncome += item.amount;
+      } else if (item.type === 'expenditure') {
+        upcomingExpense += item.amount;
+      }
+
+      const dueFullDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(info.dueDay).padStart(2, '0')}`;
+      const dueDisplayDate = new Date(currentYear, currentMonth, info.dueDay).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      if (!earliestUpcomingFullDate || dueFullDate < earliestUpcomingFullDate) {
+        earliestUpcomingFullDate = dueFullDate;
+        earliestUpcomingDateLabel = dueDisplayDate;
+      }
     }
   }
 
