@@ -150,7 +150,7 @@ export const SignupScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               end={{ x: 1, y: 1 }}
               style={styles.logoGradient}
             >
-              <HouseholdFundsLogo size={26} color={Colors.white} />
+              <HouseholdFundsLogo size={36} />
             </LinearGradient>
             <Text style={styles.heroTitle}>Create Account</Text>
             <Text style={styles.heroSubtitle}>Set up your personal access to family finances</Text>

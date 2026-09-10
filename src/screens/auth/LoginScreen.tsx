@@ -90,7 +90,7 @@ export const LoginScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
               end={{ x: 1, y: 1 }}
               style={styles.logoGradient}
             >
-              <HouseholdFundsLogo size={26} color={Colors.white} />
+              <HouseholdFundsLogo size={36} />
             </LinearGradient>
             <Text style={styles.appTitle}>Household Funds</Text>
             <Text style={styles.appSubtitle}>Your family's shared financial ledger</Text>
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
 
   // Hero
   hero: { alignItems: 'center', marginBottom: 28 },
-  logoGradient: { width: 60, height: 60, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 16, shadowColor: '#3B5BDB', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.5, shadowRadius: 16, elevation: 12 },
+  logoGradient: { width: 68, height: 68, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(56, 189, 248, 0.25)', shadowColor: '#0284C7', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 12 },
   appTitle: { fontSize: 26, fontWeight: '800', color: Colors.text, letterSpacing: -0.6, marginBottom: 6 },
   appSubtitle: { fontSize: 13, color: Colors.textMuted, marginBottom: 14, textAlign: 'center' },
   heroPills: { flexDirection: 'row', gap: 8 },

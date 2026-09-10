@@ -1,6 +1,6 @@
 ﻿// src/navigation/RootNavigator.tsx
 import React from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
@@ -25,9 +25,10 @@ export const RootNavigator: React.FC = () => {
     return (
       <View style={styles.loadingContainer}>
         <View style={styles.logoBadge}>
-          <HouseholdFundsLogo size={28} color={Colors.white} />
+          <HouseholdFundsLogo size={58} />
         </View>
-        <ActivityIndicator size="small" color={Colors.brand} style={{ marginTop: 16 }} />
+        <Text style={styles.loadingTitle}>Household Funds</Text>
+        <ActivityIndicator size="small" color="#38BDF8" style={{ marginTop: 20 }} />
       </View>
     );
   }
@@ -73,11 +74,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    backgroundColor: Colors.brand,
+    width: 84,
+    height: 84,
+    borderRadius: 22,
+    backgroundColor: 'rgba(30, 41, 59, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#0284C7',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    elevation: 10,
+  },
+  loadingTitle: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+    letterSpacing: 0.5,
   },
 });

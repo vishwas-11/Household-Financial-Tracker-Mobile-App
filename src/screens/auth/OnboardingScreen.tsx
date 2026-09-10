@@ -70,7 +70,7 @@ export const OnboardingScreen: React.FC = () => {
           {/* Header Brand */}
           <View style={styles.brandHeader}>
             <View style={styles.logoBadge}>
-              <HouseholdFundsLogo size={22} color={Colors.white} />
+              <HouseholdFundsLogo size={28} />
             </View>
             <Text style={styles.appTitle}>Household Setup</Text>
             <Text style={styles.appSubtitle}>

@@ -31,7 +31,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAddModal, title, subtitle 
       <View style={styles.container}>
       <View style={styles.leftRow}>
         <View style={styles.logoBadge}>
-          <HouseholdFundsLogo size={16} color={Colors.white} />
+          <HouseholdFundsLogo size={20} />
         </View>
         <TouchableOpacity
           style={styles.titleWrapper}
@@ -108,10 +108,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   logoBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: 6,
-    backgroundColor: Colors.brand,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: 'rgba(30, 41, 59, 0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
