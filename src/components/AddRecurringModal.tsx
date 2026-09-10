@@ -24,13 +24,15 @@ import { getTodayDateString } from '../lib/transactionCalculations';
 interface AddRecurringModalProps {
   visible: boolean;
   onClose: () => void;
+  initialItem?: RecurringItem | null;
 }
 
 export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
   visible,
   onClose,
+  initialItem,
 }) => {
-  const { members, addRecurring } = useApp();
+  const { members, addRecurring, updateRecurring } = useApp();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
 
@@ -43,6 +45,28 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
   const [frequency, setFrequency] = useState<'Monthly' | 'Bi-weekly' | 'Weekly' | 'Annual'>('Monthly');
   const [category, setCategory] = useState(TRANSACTION_CATEGORIES[0]);
   const [assignedMemberId, setAssignedMemberId] = useState(members[0]?.id || 'A');
+
+  // Sync form state when modal opens or initialItem changes
+  React.useEffect(() => {
+    if (visible && initialItem) {
+      setTitle(initialItem.title || '');
+      setAmount(initialItem.amount ? String(initialItem.amount) : '');
+      setType(initialItem.type || 'expenditure');
+      setFrequency((initialItem.frequency as any) || 'Monthly');
+      setFirstDate(initialItem.nextDueDate || todayStr);
+      setCategory(initialItem.category || TRANSACTION_CATEGORIES[0]);
+      setAssignedMemberId(initialItem.memberId || members[0]?.id || 'A');
+    } else if (visible && !initialItem) {
+      setTitle('');
+      setAmount('');
+      setType('expenditure');
+      setFrequency('Monthly');
+      setFirstDate(todayStr);
+      setCategory(TRANSACTION_CATEGORIES[0]);
+      setAssignedMemberId(members[0]?.id || 'A');
+    }
+  }, [visible, initialItem, todayStr, members]);
+
 
   // Parse chosen date
   const parsedDate = useMemo(() => parseDateString(firstDate), [firstDate]);
@@ -100,19 +124,30 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
       return;
     }
 
-    const newItem: RecurringItem = {
-      id: `rec-${Date.now()}`,
-      title: title.trim(),
-      amount: parsedAmount,
-      frequency,
-      nextDueDate: firstDate,
-      category,
-      type,
-      autoPay: true,
-      memberId: assignedMemberId,
-    };
-
-    await addRecurring(newItem);
+    if (initialItem) {
+      await updateRecurring(initialItem.id, {
+        title: title.trim(),
+        amount: parsedAmount,
+        frequency,
+        nextDueDate: firstDate,
+        category,
+        type,
+        memberId: assignedMemberId,
+      });
+    } else {
+      const newItem: RecurringItem = {
+        id: `rec-${Date.now()}`,
+        title: title.trim(),
+        amount: parsedAmount,
+        frequency,
+        nextDueDate: firstDate,
+        category,
+        type,
+        autoPay: true,
+        memberId: assignedMemberId,
+      };
+      await addRecurring(newItem);
+    }
     handleClose();
   };
 
@@ -348,7 +383,7 @@ export const AddRecurringModal: React.FC<AddRecurringModalProps> = ({
                 activeOpacity={0.8}
               >
                 <Check size={16} color={Colors.white} />
-                <Text style={styles.submitBtnText}>Save Schedule</Text>
+                <Text style={styles.submitBtnText}>{initialItem ? 'Save Changes' : 'Schedule Recurring payment'}</Text>
               </TouchableOpacity>
             </View>
           </View>

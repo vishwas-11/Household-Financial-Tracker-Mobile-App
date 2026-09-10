@@ -58,6 +58,7 @@ interface AppContextType {
   deleteTransaction: (id: string) => Promise<void>;
   updateTransaction: (id: string, updates: Partial<Transaction>) => Promise<{ success: boolean; error?: string }>;
   addRecurring: (item: RecurringItem) => Promise<void>;
+  updateRecurring: (id: string, updates: Partial<RecurringItem>) => Promise<void>;
   deleteRecurring: (id: string) => Promise<void>;
   deductRecurringNow: (item: RecurringItem) => Promise<void>;
   addMember: (member: Member) => Promise<void>;
@@ -553,6 +554,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  // Update Recurring Item
+  const updateRecurring = async (id: string, updates: Partial<RecurringItem>) => {
+    setRecurringItems((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
+    );
+    if (user?.householdId) {
+      try {
+        const payload: Record<string, any> = {};
+        if (updates.title !== undefined) payload.title = updates.title;
+        if (updates.category !== undefined) payload.category = updates.category;
+        if (updates.amount !== undefined) payload.amount = updates.amount;
+        if (updates.type !== undefined) payload.type = updates.type;
+        if (updates.frequency !== undefined) payload.frequency = updates.frequency;
+        if (updates.nextDueDate !== undefined) payload.next_due_date = updates.nextDueDate;
+        if (updates.autoPay !== undefined) payload.auto_pay = updates.autoPay;
+        if (updates.memberId !== undefined) payload.member_id = updates.memberId;
+
+        await supabase.from('recurring_items').update(payload).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase update recurring error:', err);
+      }
+    }
+  };
+
   // Deduct / Execute Recurring Item into Ledger
   const deductRecurringNow = async (item: RecurringItem) => {
     const tx = buildTransactionFromRecurring(item, members);
@@ -682,6 +707,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteTransaction,
         updateTransaction,
         addRecurring,
+    updateRecurring,
         deleteRecurring,
         deductRecurringNow,
         addMember,

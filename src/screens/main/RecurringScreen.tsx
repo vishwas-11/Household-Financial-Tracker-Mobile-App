@@ -16,11 +16,13 @@ import { RecurringItemRow } from '../../components/RecurringItemRow';
 import { AddRecurringModal } from '../../components/AddRecurringModal';
 import { useApp } from '../../context/AppContext';
 import { formatCurrency } from '../../lib/currency';
+import { RecurringItem } from '../../types';
 
 export const RecurringScreen: React.FC = () => {
   const { recurringItems, transactions, deductRecurringNow, deleteRecurring, isRefreshing, refreshData } = useApp();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<RecurringItem | null>(null);
 
   const totalMonthlyExpense = recurringItems
     .filter((r) => r.type === 'expenditure')
@@ -98,6 +100,7 @@ export const RecurringScreen: React.FC = () => {
                   transactions={transactions}
                   onDeductNow={deductRecurringNow}
                   onDelete={deleteRecurring}
+                  onEdit={(item) => setEditingItem(item)}
                 />
               ))}
 
@@ -142,8 +145,12 @@ export const RecurringScreen: React.FC = () => {
 
       {/* Add Recurring Modal */}
       <AddRecurringModal
-        visible={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
+        visible={isAddModalOpen || editingItem !== null}
+        initialItem={editingItem}
+        onClose={() => {
+          setIsAddModalOpen(false);
+          setEditingItem(null);
+        }}
       />
     </SafeAreaView>
   );

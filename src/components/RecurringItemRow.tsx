@@ -1,7 +1,7 @@
 // src/components/RecurringItemRow.tsx
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Clock, CheckCircle2, Trash2, Zap } from 'lucide-react-native';
+import { Clock, CheckCircle2, Trash2, Zap, Pencil } from 'lucide-react-native';
 import { RecurringItem, Transaction } from '../types';
 import { Colors } from '../constants/colors';
 import { formatCurrency } from '../lib/currency';
@@ -12,6 +12,7 @@ interface RecurringItemRowProps {
   transactions?: Transaction[];
   onDelete?: (id: string) => void;
   onDeductNow?: (item: RecurringItem) => Promise<void>;
+  onEdit?: (item: RecurringItem) => void;
 }
 
 export const RecurringItemRow: React.FC<RecurringItemRowProps> = ({
@@ -19,6 +20,7 @@ export const RecurringItemRow: React.FC<RecurringItemRowProps> = ({
   transactions = [],
   onDelete,
   onDeductNow,
+  onEdit,
 }) => {
   const isIncome = item.type === 'income';
   const [isDeducting, setIsDeducting] = useState(false);
@@ -35,9 +37,18 @@ export const RecurringItemRow: React.FC<RecurringItemRowProps> = ({
   };
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => onEdit?.(item)}
+      activeOpacity={0.78}
+    >
       <View style={styles.leftCol}>
-        <Text style={styles.title}>{item.title}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{item.title}</Text>
+          <View style={styles.editPencilBadge}>
+            <Pencil size={10} color={Colors.brand} />
+          </View>
+        </View>
         <Text style={styles.category}>{item.category} • {item.frequency}</Text>
 
         <View style={styles.metaRow}>
@@ -121,7 +132,7 @@ export const RecurringItemRow: React.FC<RecurringItemRowProps> = ({
           )}
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 
@@ -141,11 +152,24 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 10,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
   title: {
     fontSize: 13,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 2,
+  },
+  editPencilBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Colors.brandSubdued,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   category: {
     fontSize: 11,
