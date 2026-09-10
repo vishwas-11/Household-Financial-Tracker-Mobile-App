@@ -559,17 +559,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await addTransaction(tx);
   };
 
-  // Auto-deduct recurring obligations on their due date
-  useEffect(() => {
-    if (isLoading || recurringItems.length === 0) return;
-    const today = new Date();
-    recurringItems.forEach((item) => {
-      const info = getRecurringScheduleInfo(item, transactions, today);
-      if (info.isDueToday && !info.isSettledThisMonth && item.autoPay) {
-        deductRecurringNow(item);
-      }
-    });
-  }, [isLoading, recurringItems, transactions]);
+  // Note: Recurring obligations are settled manually by the user from the Recurring section
 
   // Delete Recurring Item
   const deleteRecurring = async (id: string) => {

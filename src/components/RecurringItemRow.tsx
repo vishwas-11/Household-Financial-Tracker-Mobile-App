@@ -86,19 +86,24 @@ export const RecurringItemRow: React.FC<RecurringItemRowProps> = ({
         </Text>
 
         <View style={styles.actionRow}>
-          {!info.isSettledThisMonth && onDeductNow && (
+          {onDeductNow && (
             <TouchableOpacity
               onPress={handleDeduct}
               disabled={isDeducting}
-              style={styles.deductBtn}
+              style={[
+                styles.deductBtn,
+                info.isSettledThisMonth && styles.deductBtnSettled,
+              ]}
               activeOpacity={0.7}
             >
               {isDeducting ? (
-                <ActivityIndicator size="small" color={Colors.brand} />
+                <ActivityIndicator size="small" color={info.isSettledThisMonth ? Colors.textMuted : Colors.brand} />
               ) : (
                 <>
-                  <Zap size={11} color={Colors.brand} />
-                  <Text style={styles.deductBtnText}>Deduct Now</Text>
+                  <Zap size={11} color={info.isSettledThisMonth ? Colors.textMuted : Colors.brand} />
+                  <Text style={[styles.deductBtnText, info.isSettledThisMonth && styles.deductBtnSettledText]}>
+                    {info.isSettledThisMonth ? 'Deduct Again' : 'Deduct Now'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -251,6 +256,13 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     fontWeight: '700',
     color: Colors.brand,
+  },
+  deductBtnSettled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  deductBtnSettledText: {
+    color: Colors.textMuted,
   },
   deleteBtn: {
     padding: 4,
