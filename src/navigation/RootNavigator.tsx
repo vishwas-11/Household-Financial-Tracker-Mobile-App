@@ -8,6 +8,7 @@ import { useApp } from '../context/AppContext';
 import { Colors } from '../constants/colors';
 import { HouseholdFundsLogo } from '../components/HouseholdFundsLogo';
 import { UpdateNotificationBanner } from '../components/UpdateNotificationBanner';
+import { AppUpdatePromptModal } from '../components/AppUpdatePromptModal';
 import { HouseholdSwitcherModal } from '../components/HouseholdSwitcherModal';
 import { Onboarding } from '../components/ui/Onboarding';
 import { ONBOARDING_STEPS } from '../constants/onboardingSteps';
@@ -37,6 +38,7 @@ export const RootNavigator: React.FC = () => {
   return (
     <>
       <UpdateNotificationBanner />
+      <AppUpdatePromptModal />
       <NavigationContainer>
         {!user ? (
           <AuthNavigator key="auth-login" initialRouteName="Login" />
