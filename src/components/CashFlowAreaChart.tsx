@@ -217,9 +217,13 @@ export const CashFlowAreaChart: React.FC<CashFlowAreaChartProps> = ({
     })
   ).current;
 
-  const activeData = activePointIndex !== null ? data[activePointIndex] : null;
-  const activeIncomePt = activePointIndex !== null ? incomePoints[activePointIndex] : null;
-  const activeExpensePt = activePointIndex !== null ? expensePoints[activePointIndex] : null;
+  // Default to current month index (data.length - 1) when not actively scrubbing
+  const currentMonthIndex = data.length > 0 ? data.length - 1 : 0;
+  const inspectedIndex = activePointIndex !== null ? activePointIndex : currentMonthIndex;
+
+  const activeData = data[inspectedIndex] || null;
+  const activeIncomePt = incomePoints[inspectedIndex] || null;
+  const activeExpensePt = expensePoints[inspectedIndex] || null;
 
   // Reveal width interpolation for left-to-right drawing animation
   const revealWidth = revealProgress.interpolate({
@@ -323,7 +327,7 @@ export const CashFlowAreaChart: React.FC<CashFlowAreaChartProps> = ({
             {/* X-axis month labels */}
             {data.map((d, i) => {
               const x = CHART_PAD.left + i * xStep;
-              const isSelected = activePointIndex === i;
+              const isSelected = inspectedIndex === i;
               return (
                 <SvgText
                   key={`x-label-${i}`}

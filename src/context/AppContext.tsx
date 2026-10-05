@@ -1,4 +1,4 @@
-﻿// src/context/AppContext.tsx
+// src/context/AppContext.tsx
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -90,18 +90,62 @@ function generateInviteCode(): string {
   return res;
 }
 
-function computeDynamicCashFlow(txList: Transaction[]): MonthlyCashFlow[] {
-  const base = getTrailingMonths();
-  txList.forEach((tx) => {
-    base.forEach((slot) => {
-      const matchMonth = tx.date.toLowerCase().includes(slot.month.toLowerCase());
-      if (matchMonth) {
-        if (tx.type === 'income') slot.income += tx.amount;
-        if (tx.type === 'expenditure') slot.expenditure += tx.amount;
+function computeDynamicCashFlow(txList: Transaction[], recurringList: RecurringItem[] = []): MonthlyCashFlow[] {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonthIdx = now.getMonth();
+  const currentMonthCycle = `${currentYear}-${String(currentMonthIdx + 1).padStart(2, '0')}`;
+
+  const res: MonthlyCashFlow[] = [];
+  for (let i = 4; i >= 0; i--) {
+    const d = new Date(currentYear, currentMonthIdx - i, 1);
+    const mYear = d.getFullYear();
+    const mMonth = d.getMonth();
+    const cycleStr = `${mYear}-${String(mMonth + 1).padStart(2, '0')}`;
+    const mName = months[mMonth];
+
+    let income = 0;
+    let expenditure = 0;
+
+    txList.forEach((tx) => {
+      let matches = false;
+      if (tx.fullDate && tx.fullDate.startsWith(cycleStr)) {
+        matches = true;
+      } else if (!tx.fullDate && tx.date.toLowerCase().includes(mName.toLowerCase())) {
+        matches = true;
+      }
+      if (matches) {
+        if (tx.type === 'income') income += tx.amount;
+        if (tx.type === 'expenditure') expenditure += tx.amount;
       }
     });
-  });
-  return base;
+
+    // For active/current month cycle, include recurring commitments as Expense in the curve
+    if (cycleStr === currentMonthCycle && recurringList.length > 0) {
+      recurringList.forEach((item) => {
+        if (item.type === 'expenditure') {
+          const isSettled = txList.some(
+            (t) =>
+              t.isRecurring &&
+              (t.notes?.includes(item.id) || t.description?.toLowerCase() === item.title.toLowerCase()) &&
+              t.fullDate &&
+              t.fullDate.startsWith(currentMonthCycle)
+          );
+          if (!isSettled) {
+            expenditure += item.amount;
+          }
+        }
+      });
+    }
+
+    res.push({
+      month: mName,
+      income,
+      expenditure,
+    });
+  }
+  return res;
 }
 
 const ONBOARDING_DISMISSED_KEY = '@hft_onboarding_dismissed';
@@ -182,8 +226,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .eq('household_id', householdId)
           .order('created_at', { ascending: false });
 
+        let loadedTx: Transaction[] = [];
         if (dbTx && dbTx.length > 0) {
-          const loaded = dbTx.map((t: any) => ({
+          loadedTx = dbTx.map((t: any) => ({
             id: t.id,
             date: t.date,
             fullDate: t.full_date,
@@ -197,11 +242,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             receiptUrl: t.receipt_url || undefined,
             isRecurring: t.is_recurring || false,
           }));
-          setTransactions(loaded);
-          setMonthlyCashFlow(computeDynamicCashFlow(loaded));
+          setTransactions(loadedTx);
         } else {
           setTransactions([]);
-          setMonthlyCashFlow(getTrailingMonths());
         }
 
         // 3. Fetch Members
@@ -244,23 +287,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           .eq('household_id', householdId)
           .order('created_at', { ascending: true });
 
+        let loadedRecurring: RecurringItem[] = [];
         if (dbRec && dbRec.length > 0) {
-          setRecurringItems(
-            dbRec.map((r: any) => ({
-              id: r.id,
-              title: r.title,
-              category: r.category,
-              amount: Number(r.amount),
-              type: r.type,
-              frequency: r.frequency,
-              nextDueDate: r.next_due_date,
-              autoPay: r.auto_pay,
-              memberId: r.member_id,
-            }))
-          );
+          loadedRecurring = dbRec.map((r: any) => ({
+            id: r.id,
+            title: r.title,
+            category: r.category,
+            amount: Number(r.amount),
+            type: r.type,
+            frequency: r.frequency,
+            nextDueDate: r.next_due_date,
+            autoPay: r.auto_pay,
+            memberId: r.member_id,
+          }));
+          setRecurringItems(loadedRecurring);
         } else {
           setRecurringItems([]);
         }
+
+        setMonthlyCashFlow(computeDynamicCashFlow(loadedTx, loadedRecurring));
       }
     } catch (err) {
       console.warn('Error loading Supabase data:', err);
@@ -450,7 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const addTransaction = async (tx: Transaction) => {
     setTransactions((prev) => {
       const updated = [tx, ...prev];
-      setMonthlyCashFlow(computeDynamicCashFlow(updated));
+      setMonthlyCashFlow(computeDynamicCashFlow(updated, recurringItems));
       return updated;
     });
 
@@ -482,7 +527,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteTransaction = async (id: string) => {
     setTransactions((prev) => {
       const updated = prev.filter((t) => t.id !== id);
-      setMonthlyCashFlow(computeDynamicCashFlow(updated));
+      setMonthlyCashFlow(computeDynamicCashFlow(updated, recurringItems));
       return updated;
     });
 
@@ -500,7 +545,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Optimistically update local state
     setTransactions((prev) => {
       const updated = prev.map((t) => (t.id === id ? { ...t, ...updates } : t));
-      setMonthlyCashFlow(computeDynamicCashFlow(updated));
+      setMonthlyCashFlow(computeDynamicCashFlow(updated, recurringItems));
       return updated;
     });
 
@@ -533,7 +578,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Add Recurring Item
   const addRecurring = async (item: RecurringItem) => {
-    setRecurringItems((prev) => [...prev, item]);
+    setRecurringItems((prev) => {
+      const updated = [...prev, item];
+      setMonthlyCashFlow(computeDynamicCashFlow(transactions, updated));
+      return updated;
+    });
     if (user?.householdId) {
       try {
         await supabase.from('recurring_items').insert({
@@ -556,9 +605,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Update Recurring Item
   const updateRecurring = async (id: string, updates: Partial<RecurringItem>) => {
-    setRecurringItems((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, ...updates } : r))
-    );
+    setRecurringItems((prev) => {
+      const updated = prev.map((r) => (r.id === id ? { ...r, ...updates } : r));
+      setMonthlyCashFlow(computeDynamicCashFlow(transactions, updated));
+      return updated;
+    });
     if (user?.householdId) {
       try {
         const payload: Record<string, any> = {};
@@ -588,7 +639,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Delete Recurring Item
   const deleteRecurring = async (id: string) => {
-    setRecurringItems((prev) => prev.filter((r) => r.id !== id));
+    setRecurringItems((prev) => {
+      const updated = prev.filter((r) => r.id !== id);
+      setMonthlyCashFlow(computeDynamicCashFlow(transactions, updated));
+      return updated;
+    });
     if (user?.householdId) {
       try {
         await supabase.from('recurring_items').delete().eq('id', id);

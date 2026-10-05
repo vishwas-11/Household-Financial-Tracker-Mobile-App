@@ -79,28 +79,36 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     });
   }, [transactions]);
 
-  // Default to initialScopeType or 'this_month' if active, else 'all_records'
+  // Always default to initialScopeType or 'this_month'
   const [scopeType, setScopeType] = useState<ReportScopeType>(
-    initialScopeType || (hasCurrentMonthTx ? 'this_month' : 'all_records')
+    initialScopeType || 'this_month'
   );
 
   React.useEffect(() => {
     if (visible) {
-      if (initialScopeType) {
-        setScopeType(initialScopeType);
-      } else if (hasCurrentMonthTx) {
-        setScopeType('this_month');
-      } else {
-        setScopeType('all_records');
-      }
+      setScopeType(initialScopeType || 'this_month');
     }
-  }, [visible, initialScopeType, hasCurrentMonthTx]);
-  const [selectedYear, setSelectedYear] = useState<number>(
-    hasCurrentMonthTx ? currentYear : latestTxDate.getFullYear()
+  }, [visible, initialScopeType]);
+
+  // Previous month info for smart suggestion prompt
+  const prevMonthDate = useMemo(
+    () => new Date(currentYear, currentMonth - 1, 1),
+    [currentYear, currentMonth]
   );
-  const [selectedMonth, setSelectedMonth] = useState<number>(
-    hasCurrentMonthTx ? currentMonth : latestTxDate.getMonth()
+  const prevMonthName = useMemo(
+    () => prevMonthDate.toLocaleString('en-US', { month: 'long' }),
+    [prevMonthDate]
   );
+  const prevMonthKey = useMemo(
+    () => `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}`,
+    [prevMonthDate]
+  );
+  const prevMonthTxCount = useMemo(() => {
+    return transactions.filter((t) => t.fullDate && t.fullDate.startsWith(prevMonthKey)).length;
+  }, [transactions, prevMonthKey]);
+
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number>(currentMonth);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [isOpeningViewer, setIsOpeningViewer] = useState<boolean>(false);
   const [savedPdf, setSavedPdf] = useState<{ uri: string; fileName: string } | null>(null);
@@ -412,6 +420,25 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
                         );
                       })}
                     </View>
+                  </View>
+                )}
+
+                {/* Subtle suggestion prompt if current month has 0 entries but previous month has records */}
+                {scopeType === 'this_month' && analytics.transactionCount === 0 && prevMonthTxCount > 0 && (
+                  <View style={styles.promptSuggestCard}>
+                    <View style={styles.promptSuggestTop}>
+                      <Calendar size={14} color={Colors.brand} />
+                      <Text style={styles.promptSuggestText}>
+                        No entries recorded for this month yet. Would you like to view {prevMonthName}'s statement ({prevMonthTxCount} entries)?
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.promptSuggestBtn}
+                      onPress={() => setScopeType('last_month')}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.promptSuggestBtnText}>Switch to Last Month ({prevMonthName})</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
 
@@ -1014,5 +1041,41 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 14,
     fontWeight: '600',
+  },
+
+  // Subtle suggestion card to switch to last month
+  promptSuggestCard: {
+    backgroundColor: 'rgba(99, 102, 241, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(99, 102, 241, 0.25)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+    gap: 10,
+  },
+  promptSuggestTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  promptSuggestText: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 17,
+  },
+  promptSuggestBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.brandSubdued,
+    borderWidth: 1,
+    borderColor: Colors.brandBorder,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  promptSuggestBtnText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: Colors.brand,
   },
 });

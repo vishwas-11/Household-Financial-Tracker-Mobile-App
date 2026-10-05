@@ -330,7 +330,7 @@ export const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <TouchableOpacity
             style={styles.exportBannerCard}
             onPress={() => {
-              setExportScope(isCurrentMonthEmpty && prevMonthTxCount > 0 ? 'last_month' : 'this_month');
+              setExportScope('this_month');
               setIsExportModalOpen(true);
             }}
             activeOpacity={0.82}
