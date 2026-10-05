@@ -8,6 +8,7 @@ import { Transaction, Member } from '../types';
 export type ReportScopeType =
   | 'all_records'
   | 'this_month'
+  | 'last_month'
   | 'last_30_days'
   | 'specific_month'
   | 'past_12_months'
@@ -117,6 +118,14 @@ export function computeReportAnalytics(
       endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
       const monthName = now.toLocaleString('en-US', { month: 'long' });
       periodLabel = `${monthName} ${now.getFullYear()} Statement`;
+      break;
+    }
+    case 'last_month': {
+      const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      startDate = new Date(prevDate.getFullYear(), prevDate.getMonth(), 1);
+      endDate = new Date(prevDate.getFullYear(), prevDate.getMonth() + 1, 0, 23, 59, 59);
+      const mName = startDate.toLocaleString('en-US', { month: 'long' });
+      periodLabel = `${mName} ${startDate.getFullYear()} Statement`;
       break;
     }
     case 'last_30_days': {

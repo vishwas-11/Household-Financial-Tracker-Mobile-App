@@ -34,6 +34,7 @@ interface HeroBalanceCardProps {
   earliestUpcomingDate?: string;
   upcomingRecurringItems?: UpcomingRecurringItemPreview[];
   onNavigateToRecurring?: () => void;
+  cycleLabel?: string;
 }
 
 export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
@@ -51,6 +52,7 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
   earliestUpcomingDate,
   upcomingRecurringItems = [],
   onNavigateToRecurring,
+  cycleLabel,
 }) => {
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -150,7 +152,9 @@ export const HeroBalanceCard: React.FC<HeroBalanceCardProps> = ({
             <View style={styles.balanceLabelRow}>
               <View style={styles.balanceLabelLeft}>
                 <View style={styles.liveHoldingDot} />
-                <Text style={styles.balanceLabel}>CURRENT HOLDING</Text>
+                <Text style={styles.balanceLabel}>
+                  {cycleLabel ? `${cycleLabel.toUpperCase()} · CURRENT HOLDING` : 'CURRENT HOLDING'}
+                </Text>
               </View>
             </View>
             <AnimatedCounter

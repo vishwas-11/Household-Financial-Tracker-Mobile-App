@@ -1,4 +1,4 @@
-﻿// src/components/AddTransactionModal.tsx
+// src/components/AddTransactionModal.tsx
 import React, { useState, useEffect } from 'react';
 import {
   Modal,
@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { X, Clock, Camera, Image as ImageIcon, Trash2, Check, TrendingUp, AlertTriangle } from 'lucide-react-native';
 import { Transaction, TransactionType } from '../types';
-import { isTransactionUpcoming } from '../lib/transactionCalculations';
+import { isTransactionUpcoming, getTodayDateString } from '../lib/transactionCalculations';
 import { Colors } from '../constants/colors';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, TRANSACTION_CATEGORIES } from '../constants/initialData';
 import { useApp } from '../context/AppContext';
@@ -44,8 +44,14 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
 
-  const totalIncomeCount = transactions.filter((t) => t.type === 'income').length;
-  const defaultToIncome = initialType ? initialType === 'income' : totalIncomeCount === 0;
+  const [date, setDate] = useState(() => initialDate || getTodayDateString());
+
+  const selectedMonthKey = date ? date.slice(0, 7) : getTodayDateString().slice(0, 7);
+  const cycleIncomeCount = transactions.filter(
+    (t) => t.type === 'income' && t.fullDate && t.fullDate.startsWith(selectedMonthKey)
+  ).length;
+
+  const defaultToIncome = initialType ? initialType === 'income' : cycleIncomeCount === 0;
 
   const [type, setType] = useState<TransactionType>(
     initialType || (defaultToIncome ? 'income' : 'expenditure')
@@ -54,10 +60,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState(defaultToIncome ? 'Salary' : EXPENSE_CATEGORIES[0]);
   const [memberId, setMemberId] = useState(members[0]?.id || 'A');
-  const [date, setDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
   const [notes, setNotes] = useState('');
   const [receiptUri, setReceiptUri] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -65,18 +67,22 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
   // When modal opens, sync type, category, and date if specified
   useEffect(() => {
     if (visible) {
-      const targetType = initialType || (totalIncomeCount === 0 ? 'income' : 'expenditure');
+      const activeDate = initialDate || getTodayDateString();
+      setDate(activeDate);
+      const activeMonthKey = activeDate.slice(0, 7);
+      const monthIncomeCount = transactions.filter(
+        (t) => t.type === 'income' && t.fullDate && t.fullDate.startsWith(activeMonthKey)
+      ).length;
+
+      const targetType = initialType || (monthIncomeCount === 0 ? 'income' : 'expenditure');
       setType(targetType);
       if (targetType === 'income') {
         setCategory('Salary');
       } else {
         setCategory(TRANSACTION_CATEGORIES[0]);
       }
-      if (initialDate) {
-        setDate(initialDate);
-      }
     }
-  }, [visible, initialType, initialDate, totalIncomeCount]);
+  }, [visible, initialType, initialDate, transactions]);
 
   useEffect(() => {
     if (members.length > 0 && !members.some((m) => m.id === memberId)) {
@@ -184,11 +190,11 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
       return;
     }
 
-    // Safety check: Alert user if logging expense before income
-    if (type === 'expenditure' && totalIncomeCount === 0) {
+    // Safety check: Alert user if logging expense before recording cycle income
+    if (type === 'expenditure' && cycleIncomeCount === 0) {
       Alert.alert(
         'Negative Balance Warning',
-        'You have not recorded any income yet. Adding an expenditure first will cause your household funds balance to drop into a negative deficit.\n\nWould you like to record your opening income or salary first?',
+        'You have not recorded any income for this monthly cycle yet. Adding an expenditure first will cause your cycle balance to drop into a negative deficit.\n\nWould you like to record your opening income or salary first?',
         [
           {
             text: 'Record Income First',
@@ -262,7 +268,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({
               showsVerticalScrollIndicator={false}
             >
               {/* Income-First Guidance Banner */}
-              {totalIncomeCount === 0 && (
+              {cycleIncomeCount === 0 && (
                 type === 'income' ? (
                   <View style={styles.incomeFirstHint}>
                     <View style={styles.hintIconCircle}>

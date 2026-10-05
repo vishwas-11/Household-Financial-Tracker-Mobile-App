@@ -39,6 +39,7 @@ import { formatCurrency } from '../lib/currency';
 interface ExportReportModalProps {
   visible: boolean;
   onClose: () => void;
+  initialScopeType?: ReportScopeType;
 }
 
 const MONTH_NAMES = [
@@ -49,6 +50,7 @@ const MONTH_NAMES = [
 export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   visible,
   onClose,
+  initialScopeType,
 }) => {
   const { transactions, members, householdName, inviteCode } = useApp();
   const insets = useSafeAreaInsets();
@@ -77,10 +79,22 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
     });
   }, [transactions]);
 
-  // Default to 'all_records' if this_month has 0 transactions so user immediately sees live data
+  // Default to initialScopeType or 'this_month' if active, else 'all_records'
   const [scopeType, setScopeType] = useState<ReportScopeType>(
-    hasCurrentMonthTx ? 'this_month' : 'all_records'
+    initialScopeType || (hasCurrentMonthTx ? 'this_month' : 'all_records')
   );
+
+  React.useEffect(() => {
+    if (visible) {
+      if (initialScopeType) {
+        setScopeType(initialScopeType);
+      } else if (hasCurrentMonthTx) {
+        setScopeType('this_month');
+      } else {
+        setScopeType('all_records');
+      }
+    }
+  }, [visible, initialScopeType, hasCurrentMonthTx]);
   const [selectedYear, setSelectedYear] = useState<number>(
     hasCurrentMonthTx ? currentYear : latestTxDate.getFullYear()
   );
@@ -305,6 +319,7 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
                       [
                         { id: 'all_records', label: 'All Records' },
                         { id: 'this_month', label: 'This Month' },
+                        { id: 'last_month', label: 'Last Month' },
                         { id: '30_days', label: '30 Days', rawId: 'last_30_days' },
                         { id: 'specific_month', label: 'Specific Month' },
                         { id: 'past_12_months', label: '12 Months' },
